@@ -2,7 +2,7 @@ import discord
 from discord.ext import commands
 
 # ضع التوكن الخاص بك هنا مباشرة بين علامتي التنصيص
-TOKEN = "MTUxMjA4OTMyMzkyNTkzMDA5NQ.GuW8EP.9HlW4H6XIDGyF9ABb3xaNq5qCPxvo1qmy6cP1c"
+TOKEN = "هنا_ضع_التوكن_الجديد_الذي_نسخته_من_ديسكورد"
 
 intents = discord.Intents.all()
 bot = commands.Bot(command_prefix="#", intents=intents)
