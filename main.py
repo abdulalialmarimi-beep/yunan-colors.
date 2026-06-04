@@ -2,7 +2,7 @@ import discord
 from discord.ext import commands
 
 # ضع التوكن الخاص بك هنا داخل علامات التنصيص
-TOKEN = "MTUxMjA4OTMyMzkyNTkzMDA5NQ.GfONWT.jRytYpq4afnjAG86kM2265gS0goUc_NEnTqBuQ" 
+TOKEN = "TOKEN" 
 IMAGE_URL = "ضع_رابط_صورتك_هنا"
 
 bot = commands.Bot(command_prefix="#", intents=discord.Intents.all())
