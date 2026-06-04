@@ -1,17 +1,14 @@
 import discord
 from discord.ext import commands
 
-# ضع التوكن الخاص بك هنا
 TOKEN = "ضع_التوكن_هنا"
-
 intents = discord.Intents.all()
 bot = commands.Bot(command_prefix="#", intents=intents)
 
+# فئة الأزرار (40 زر مرتبة)
 class ColorView(discord.ui.View):
     def __init__(self):
-        # timeout=None يجعل الأزرار تعمل للأبد ولا تنتهي صلاحيتها
-        super().__init__(timeout=None)
-        # إنشاء 40 زر (مربعات الألوان)
+        super().__init__(timeout=None) # يجعل الأزرار دائمة
         for i in range(1, 41):
             btn = discord.ui.Button(label=f"لون {i}", style=discord.ButtonStyle.primary, custom_id=f"color_{i}")
             btn.callback = self.make_callback(i)
@@ -22,10 +19,9 @@ class ColorView(discord.ui.View):
             role_name = f"لون {i}"
             role = discord.utils.get(interaction.guild.roles, name=role_name)
             if not role:
-                # إنشاء الرتبة تلقائياً إذا لم تكن موجودة
                 role = await interaction.guild.create_role(name=role_name)
             
-            # إزالة رتب الألوان القديمة (ليتغير اللون فوراً عند اختيار لون جديد)
+            # إزالة رتب الألوان القديمة للعضو
             for r in interaction.user.roles:
                 if r.name.startswith("لون "):
                     await interaction.user.remove_roles(r)
@@ -34,10 +30,11 @@ class ColorView(discord.ui.View):
             await interaction.response.send_message(f"✅ تم تفعيل اللون {i} بنجاح!", ephemeral=True)
         return callback
 
+# الأمر الوحيد الذي تحتاجه
 @bot.command()
 async def لوحة(ctx):
-    # مسح الرسائل القديمة في القناة قبل إرسال اللوحة (للحفاظ على نظافة القناة)
-    await ctx.channel.purge(limit=10)
+    # يحذف أي لوحة قديمة في القناة قبل إرسال الجديدة
+    await ctx.channel.purge(limit=5)
     
     embed = discord.Embed(
         title="👑 أقوى نظام ألوان - YONAN FAMILY",
@@ -48,8 +45,7 @@ async def لوحة(ctx):
 
 @bot.event
 async def on_ready():
-    # تسجيل الأزرار في ذاكرة البوت لتعمل دائماً
-    bot.add_view(ColorView())
-    print("🚀 البوت التاريخي جاهز للعمل!")
+    bot.add_view(ColorView()) # يربط الأزرار بالذاكرة
+    print("🚀 البوت جاهز ويعمل بكامل قوته!")
 
 bot.run(TOKEN)
