@@ -2,7 +2,7 @@ import os
 import discord
 from discord.ext import commands
 
-# تأكد أن اسم الـ Key في موقع Render هو BOT_TOKEN
+# هذا الكود يبحث عن كلمة TOKEN في إعدادات موقع Render
 TOKEN = os.environ.get("TOKEN")
 IMAGE_URL = "ضع_رابط_صورتك_هنا"
 
@@ -38,6 +38,4 @@ async def on_ready():
 async def لون(ctx):
     embed = discord.Embed(title="🎨 لوحة ألوان YONAN FAMILY")
     embed.set_image(url=IMAGE_URL)
-    await ctx.send(embed=embed, view=ColorView())
-
-bot.run(TOKEN)
+    
