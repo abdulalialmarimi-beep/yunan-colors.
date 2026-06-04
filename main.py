@@ -1,8 +1,8 @@
 import discord
 from discord.ext import commands
+import os
 
-# ضع التوكن الخاص بك هنا مباشرة بين علامتي التنصيص
-TOKEN = "هنا_ضع_التوكن_الجديد_الذي_نسخته_من_ديسكورد"
+TOKEN = os.environ.get("TOKEN")
 
 intents = discord.Intents.all()
 bot = commands.Bot(command_prefix="#", intents=intents)
@@ -38,4 +38,8 @@ async def on_ready():
     bot.add_view(ColorView())
     print("✅ البوت جاهز ويعمل الآن!")
 
-bot.run(TOKEN)
+if TOKEN:
+    bot.run(TOKEN)
+else:
+    print("❌ خطأ: التوكن غير موجود في إعدادات Render!")
+    
