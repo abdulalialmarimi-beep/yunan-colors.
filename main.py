@@ -5,24 +5,18 @@ from discord.ext import commands
 from flask import Flask
 from threading import Thread
 
-# --- جزء التنشيط 24 ساعة ---
+# --- الحماية من التوقف (Keep-Alive) ---
 app = Flask('')
 @app.route('/')
-def home():
-    return "البوت يعمل بكفاءة!"
-
-def run():
-    app.run(host='0.0.0.0', port=8080)
-
-t = Thread(target=run)
-t.start()
-# -------------------------
+def home(): return "البوت يعمل بكفاءة!"
+def run(): app.run(host='0.0.0.0', port=8080)
+Thread(target=run).start()
 
 TOKEN = os.environ.get("TOKEN")
 intents = discord.Intents.all()
 bot = commands.Bot(command_prefix="#", intents=intents)
 
-# القائمة الدقيقة حسب طلبك
+# القائمة الثابتة (لا يمكن أن يخطئ البوت في ترتيبها)
 COLOR_DATA = {
     1: ("أحمر صارخ", 0xFF0000), 2: ("أحمر برتقالي", 0xFF4500), 3: ("برتقالي أحمر", 0xFF6347), 4: ("برتقالي", 0xFFA500), 5: ("برتقالي ذهبي", 0xFF8C00),
     6: ("ذهبي", 0xFFD700), 7: ("أصفر ذهبي", 0xFFD700), 8: ("أصفر", 0xFFFF00), 9: ("أصفر مخضر", 0xADFF2F), 10: ("أخضر مصفر", 0xBDFF00),
@@ -36,42 +30,40 @@ COLOR_DATA = {
     46: ("رمادي فاتح", 0xD3D3D3), 47: ("رمادي مزرق", 0x708090), 48: ("رمادي أرجواني", 0x9370DB), 49: ("رمادي غامق", 0x36393F), 50: ("أسود مخملي", 0x2C2F33)
 }
 
-class ColorPagination(discord.ui.View):
+class ColorView(discord.ui.View):
     def __init__(self, page=0):
         super().__init__(timeout=None)
         self.page = page
-        self.create_buttons()
+        self.update_buttons()
 
-    def create_buttons(self):
+    def update_buttons(self):
         self.clear_items()
         start = (self.page * 10) + 1
-        end = start + 10
-        for i in range(start, end):
-            name, color = COLOR_DATA[i]
-            btn = discord.ui.Button(label=f"{i}. {name}", style=discord.ButtonStyle.secondary, custom_id=f"c{i}")
-            btn.callback = self.make_callback(name, color)
-            self.add_item(btn)
+        for i in range(start, start + 10):
+            if i in COLOR_DATA:
+                btn = discord.ui.Button(label=f"{i}", style=discord.ButtonStyle.secondary, custom_id=f"color_{i}")
+                btn.callback = self.get_callback(i)
+                self.add_item(btn)
         self.add_item(discord.ui.Button(label="⬅️", style=discord.ButtonStyle.primary, custom_id="prev", row=4))
-        self.add_item(discord.ui.Button(label="❌ إزالة الألوان", style=discord.ButtonStyle.danger, custom_id="remove", row=4))
+        self.add_item(discord.ui.Button(label="❌ إزالة", style=discord.ButtonStyle.danger, custom_id="remove", row=4))
         self.add_item(discord.ui.Button(label="➡️", style=discord.ButtonStyle.primary, custom_id="next", row=4))
 
-    def make_callback(self, name, color_hex):
+    def get_callback(self, i):
         async def callback(interaction: discord.Interaction):
             try:
-                # حذف الرتب القديمة قبل الإضافة
+                name, color = COLOR_DATA[i]
+                # إزالة أي لون من قائمة الـ 50
                 for r in interaction.user.roles:
-                    if r.name in [COLOR_DATA[i][0] for i in range(1, 51)]:
+                    if any(r.name == COLOR_DATA[n][0] for n in range(1, 51)):
                         await interaction.user.remove_roles(r)
-                # إضافة الرتبة
+                # إضافة اللون الجديد
                 role = discord.utils.get(interaction.guild.roles, name=name)
-                if not role:
-                    role = await interaction.guild.create_role(name=name, color=discord.Color(color_hex))
+                if not role: role = await interaction.guild.create_role(name=name, color=discord.Color(color))
                 await interaction.user.add_roles(role)
-                await interaction.response.send_message(f"✅ تم تفعيل {name}!", ephemeral=True)
+                await interaction.response.send_message(f"✅ تم تفعيل: {name}", ephemeral=True)
                 await asyncio.sleep(4)
                 await interaction.delete_original_response()
-            except Exception as e:
-                print(f"خطأ: {e}")
+            except: pass
         return callback
 
     async def interaction_check(self, interaction: discord.Interaction) -> bool:
@@ -80,22 +72,17 @@ class ColorPagination(discord.ui.View):
         elif cid == "next": self.page = min(4, self.page + 1)
         elif cid == "remove":
             for r in interaction.user.roles:
-                if r.name in [COLOR_DATA[i][0] for i in range(1, 51)]:
-                    await interaction.user.remove_roles(r)
-            await interaction.response.send_message("❌ تمت إزالة الألوان!", ephemeral=True)
+                if any(r.name == COLOR_DATA[n][0] for n in range(1, 51)): await interaction.user.remove_roles(r)
+            await interaction.response.send_message("❌ تمت الإزالة", ephemeral=True)
             await asyncio.sleep(4)
             await interaction.delete_original_response()
             return True
-        self.create_buttons()
+        self.update_buttons()
         await interaction.response.edit_message(view=self)
         return True
 
-@bot.event
-async def on_ready():
-    print(f'البوت {bot.user} جاهز تماماً!')
-
 @bot.command()
 async def لوحة(ctx):
-    await ctx.send("👑 **نظام ألوان YONAN (50 لوناً):**", view=ColorPagination())
+    await ctx.send("👑 **نظام ألوان YONAN (اختر رقم اللون):**", view=ColorView())
 
 bot.run(TOKEN)
