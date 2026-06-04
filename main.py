@@ -1,8 +1,8 @@
 import discord
 from discord.ext import commands
 
-# ضع التوكن الخاص بك هنا بين علامتي تنصيص
-TOKEN = "MTAxMjM0NTY3ODkwMTIzNDU2.Gxyz12.ABC... (MTUxMjA4OTMyMzkyNTkzMDA5NQ.GvB_P5.2MeMskAxcZfEnWE_FVk6smDxeL3A6l0quaIn7M)"
+# ضع التوكن الخاص بك هنا داخل علامات التنصيص
+TOKEN = "MTAxMjM0NTY3ODkwMTIzNDU2.Gxyz12.ABC..." 
 IMAGE_URL = "ضع_رابط_صورتك_هنا"
 
 bot = commands.Bot(command_prefix="#", intents=discord.Intents.all())
@@ -31,7 +31,7 @@ class ColorView(discord.ui.View):
 @bot.event
 async def on_ready():
     bot.add_view(ColorView())
-    print("✅ البوت جاهز!")
+    print("✅ البوت جاهز ويعمل الآن!")
 
 @bot.command()
 async def لون(ctx):
@@ -39,4 +39,4 @@ async def لون(ctx):
     embed.set_image(url=IMAGE_URL)
     await ctx.send(embed=embed, view=ColorView())
 
-bot.run(TOKEN)
+bot.run(MTUxMjA4OTMyMzkyNTkzMDA5NQ.GvB_P5.2MeMskAxcZfEnWE_FVk6smDxeL3A6l0quaIn7M)
