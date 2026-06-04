@@ -22,7 +22,7 @@ TOKEN = os.environ.get("TOKEN")
 intents = discord.Intents.all()
 bot = commands.Bot(command_prefix="#", intents=intents)
 
-# القائمة المرتبة والمطابقة تماماً لطلبك
+# القائمة الدقيقة حسب طلبك
 COLOR_DATA = {
     1: ("أحمر صارخ", 0xFF0000), 2: ("أحمر برتقالي", 0xFF4500), 3: ("برتقالي أحمر", 0xFF6347), 4: ("برتقالي", 0xFFA500), 5: ("برتقالي ذهبي", 0xFF8C00),
     6: ("ذهبي", 0xFFD700), 7: ("أصفر ذهبي", 0xFFD700), 8: ("أصفر", 0xFFFF00), 9: ("أصفر مخضر", 0xADFF2F), 10: ("أخضر مصفر", 0xBDFF00),
@@ -49,25 +49,23 @@ class ColorPagination(discord.ui.View):
         for i in range(start, end):
             name, color = COLOR_DATA[i]
             btn = discord.ui.Button(label=f"{i}. {name}", style=discord.ButtonStyle.secondary, custom_id=f"c{i}")
-            btn.callback = self.make_callback(i, name, color)
+            btn.callback = self.make_callback(name, color)
             self.add_item(btn)
-        
         self.add_item(discord.ui.Button(label="⬅️", style=discord.ButtonStyle.primary, custom_id="prev", row=4))
-        self.add_item(discord.ui.Button(label="إزالة الألوان", style=discord.ButtonStyle.danger, custom_id="remove", row=4))
+        self.add_item(discord.ui.Button(label="❌ إزالة الألوان", style=discord.ButtonStyle.danger, custom_id="remove", row=4))
         self.add_item(discord.ui.Button(label="➡️", style=discord.ButtonStyle.primary, custom_id="next", row=4))
 
-    def make_callback(self, num, name, color_hex):
+    def make_callback(self, name, color_hex):
         async def callback(interaction: discord.Interaction):
             try:
-                role = discord.utils.get(interaction.guild.roles, name=name)
-                if not role:
-                    role = await interaction.guild.create_role(name=name, color=discord.Color(color_hex))
-                
-                # إزالة أي رتبة من قائمة الـ 50 لوناً
+                # حذف الرتب القديمة قبل الإضافة
                 for r in interaction.user.roles:
                     if r.name in [COLOR_DATA[i][0] for i in range(1, 51)]:
                         await interaction.user.remove_roles(r)
-                
+                # إضافة الرتبة
+                role = discord.utils.get(interaction.guild.roles, name=name)
+                if not role:
+                    role = await interaction.guild.create_role(name=name, color=discord.Color(color_hex))
                 await interaction.user.add_roles(role)
                 await interaction.response.send_message(f"✅ تم تفعيل {name}!", ephemeral=True)
                 await asyncio.sleep(4)
@@ -84,7 +82,7 @@ class ColorPagination(discord.ui.View):
             for r in interaction.user.roles:
                 if r.name in [COLOR_DATA[i][0] for i in range(1, 51)]:
                     await interaction.user.remove_roles(r)
-            await interaction.response.send_message("❌ تم إزالة اللون!", ephemeral=True)
+            await interaction.response.send_message("❌ تمت إزالة الألوان!", ephemeral=True)
             await asyncio.sleep(4)
             await interaction.delete_original_response()
             return True
@@ -94,10 +92,10 @@ class ColorPagination(discord.ui.View):
 
 @bot.event
 async def on_ready():
-    print(f'البوت {bot.user} جاهز للعمل 24/7!')
+    print(f'البوت {bot.user} جاهز تماماً!')
 
 @bot.command()
 async def لوحة(ctx):
-    await ctx.send("👑 **نظام ألوان YONAN (50 لوناً) - اختر لونك المفضل:**", view=ColorPagination())
+    await ctx.send("👑 **نظام ألوان YONAN (50 لوناً):**", view=ColorPagination())
 
 bot.run(TOKEN)
