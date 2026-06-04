@@ -2,7 +2,7 @@ import discord
 from discord.ext import commands
 
 # ضع التوكن الخاص بك هنا داخل علامات التنصيص
-TOKEN = "MTAxMjM0NTY3ODkwMTIzNDU2.Gxyz12.ABC..." 
+TOKEN = "MTUxMjA4OTMyMzkyNTkzMDA5NQ.GvB_P5.2MeMskAxcZfEnWE_FVk6smDxeL3A6l0quaIn7M" 
 IMAGE_URL = "ضع_رابط_صورتك_هنا"
 
 bot = commands.Bot(command_prefix="#", intents=discord.Intents.all())
@@ -39,4 +39,4 @@ async def لون(ctx):
     embed.set_image(url=IMAGE_URL)
     await ctx.send(embed=embed, view=ColorView())
 
-bot.run(MTUxMjA4OTMyMzkyNTkzMDA5NQ.GvB_P5.2MeMskAxcZfEnWE_FVk6smDxeL3A6l0quaIn7M)
+bot.run(TOKEN)
