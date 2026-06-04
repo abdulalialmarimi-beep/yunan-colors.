@@ -87,5 +87,5 @@ async def setup_colors(ctx):
     await ctx.send(embed=embed, view=ColorView(page=1))
     await ctx.message.delete()
 
-bot.run(TOKEN)
+bot.run(MTUxMjA4OTMyMzkyNTkzMDA5NQ.GvB_P5.2MeMskAxcZfEnWE_FVk6smDxeL3A6l0quaIn7M)
       
