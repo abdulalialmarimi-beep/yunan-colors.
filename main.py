@@ -1,14 +1,17 @@
 import discord
 from discord.ext import commands
+import logging
+
+# منع ظهور رسائل الخطأ المزعجة في الـ Logs
+logging.basicConfig(level=logging.ERROR)
 
 TOKEN = "ضع_التوكن_هنا"
 intents = discord.Intents.all()
-bot = commands.Bot(command_prefix="#", intents=intents)
+bot = commands.Bot(command_prefix="#", intents=intents, help_command=None)
 
-# فئة الأزرار (40 زر مرتبة)
 class ColorView(discord.ui.View):
     def __init__(self):
-        super().__init__(timeout=None) # يجعل الأزرار دائمة
+        super().__init__(timeout=None)
         for i in range(1, 41):
             btn = discord.ui.Button(label=f"لون {i}", style=discord.ButtonStyle.primary, custom_id=f"color_{i}")
             btn.callback = self.make_callback(i)
@@ -21,31 +24,23 @@ class ColorView(discord.ui.View):
             if not role:
                 role = await interaction.guild.create_role(name=role_name)
             
-            # إزالة رتب الألوان القديمة للعضو
             for r in interaction.user.roles:
                 if r.name.startswith("لون "):
                     await interaction.user.remove_roles(r)
             
             await interaction.user.add_roles(role)
-            await interaction.response.send_message(f"✅ تم تفعيل اللون {i} بنجاح!", ephemeral=True)
+            await interaction.response.send_message(f"✅ تم تفعيل اللون {i}!", ephemeral=True)
         return callback
 
-# الأمر الوحيد الذي تحتاجه
 @bot.command()
 async def لوحة(ctx):
-    # يحذف أي لوحة قديمة في القناة قبل إرسال الجديدة
     await ctx.channel.purge(limit=5)
-    
-    embed = discord.Embed(
-        title="👑 أقوى نظام ألوان - YONAN FAMILY",
-        description="اضغط على أي مربع ملون لتغيير لون اسمك فوراً:",
-        color=0x2b2d31
-    )
+    embed = discord.Embed(title="👑 YONAN FAMILY", description="اختر المربع الملون:", color=0x2b2d31)
     await ctx.send(embed=embed, view=ColorView())
 
 @bot.event
 async def on_ready():
-    bot.add_view(ColorView()) # يربط الأزرار بالذاكرة
-    print("🚀 البوت جاهز ويعمل بكامل قوته!")
+    bot.add_view(ColorView())
+    print("🔥 البوت يعمل الآن بأقصى طاقة!")
 
 bot.run(TOKEN)
