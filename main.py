@@ -3,7 +3,7 @@ import discord
 from discord.ext import commands
 
 # تأكد أن اسم الـ Key في موقع Render هو BOT_TOKEN
-TOKEN = os.environ.get("BOT_TOKEN")
+TOKEN = os.environ.get("TOKEN")
 IMAGE_URL = "ضع_رابط_صورتك_هنا"
 
 bot = commands.Bot(command_prefix="#", intents=discord.Intents.all())
