@@ -1,23 +1,19 @@
 import os
 import discord
 import asyncio
+import random
 from discord.ext import commands
 from flask import Flask
 from threading import Thread
 
-# تشغيل البوت 24/7
 app = Flask('')
 @app.route('/')
-def home(): return "البوت يعمل!"
+def home(): return "البوت يعمل 24/7!"
 Thread(target=lambda: app.run(host='0.0.0.0', port=8080)).start()
 
 TOKEN = os.environ.get("TOKEN")
 intents = discord.Intents.all()
 bot = commands.Bot(command_prefix="#", intents=intents)
-
-# قاموس الألوان (تأكد أن أسماء الرتب في سيرفرك تطابق هذه تماماً)
-# إذا أردت تسميتهم "لون 1", "لون 2" بدل الأسماء الطويلة، عدلها هنا
-COLOR_DATA = {i: (f"لون {i}", 0x000000) for i in range(1, 51)}
 
 class ColorView(discord.ui.View):
     def __init__(self, page=0):
@@ -38,20 +34,25 @@ class ColorView(discord.ui.View):
 
     def make_callback(self, i):
         async def callback(interaction: discord.Interaction):
-            role_name = COLOR_DATA[i][0]
+            role_name = f"رول {i}"
+            # البحث عن الرولة أو إنشاؤها تلقائياً إذا لم توجد
             role = discord.utils.get(interaction.guild.roles, name=role_name)
             if not role:
-                await interaction.response.send_message(f"❌ الرتبة '{role_name}' غير موجودة، قم بإنشائها أولاً!", ephemeral=True)
-                return
+                # إنشاء رولة جديدة بلون عشوائي إذا لم تكن موجودة
+                color = discord.Color(random.randint(0, 0xFFFFFF))
+                role = await interaction.guild.create_role(name=role_name, color=color)
             
-            # إزالة الألوان القديمة للعضو
+            # إزالة الرولات القديمة
             for n in range(1, 51):
-                old_role = discord.utils.get(interaction.guild.roles, name=COLOR_DATA[n][0])
+                old_role = discord.utils.get(interaction.guild.roles, name=f"رول {n}")
                 if old_role in interaction.user.roles:
                     await interaction.user.remove_roles(old_role)
             
             await interaction.user.add_roles(role)
-            await interaction.response.send_message(f"✅ تم تفعيل اللون: {role_name}", ephemeral=True)
+            await interaction.response.send_message(f"✅ تم تفعيل: {role_name}", ephemeral=True)
+            await asyncio.sleep(4)
+            try: await interaction.delete_original_response()
+            except: pass
         return callback
 
     async def interaction_check(self, interaction: discord.Interaction) -> bool:
@@ -60,9 +61,12 @@ class ColorView(discord.ui.View):
         elif cid == "next": self.page = min(4, self.page + 1)
         elif cid == "remove":
             for n in range(1, 51):
-                old_role = discord.utils.get(interaction.guild.roles, name=COLOR_DATA[n][0])
-                if old_role in interaction.user.roles: await interaction.user.remove_roles(old_role)
-            await interaction.response.send_message("❌ تمت إزالة جميع الألوان", ephemeral=True)
+                role = discord.utils.get(interaction.guild.roles, name=f"رول {n}")
+                if role in interaction.user.roles: await interaction.user.remove_roles(role)
+            await interaction.response.send_message("❌ تمت إزالة الألوان", ephemeral=True)
+            await asyncio.sleep(4)
+            try: await interaction.delete_original_response()
+            except: pass
             return True
         self.update_buttons()
         await interaction.response.edit_message(view=self)
@@ -71,7 +75,10 @@ class ColorView(discord.ui.View):
 @bot.command()
 @commands.has_permissions(administrator=True)
 async def ارسال_اللوحة(ctx):
-    embed = discord.Embed(title="👑 نظام ألوان YONAN", description="اضغط على الرقم لاختيار لونك!")
+    image_url = "https://cdn.discordapp.com/attachments/801930633635037194/1512226140025131070/1000099891.jpg"
+    embed = discord.Embed(title="👑 نظام ألوان YONAN", description="اضغط الرقم المطلوب (سيتم إنشاء الرولة تلقائياً):")
+    embed.set_image(url=image_url)
     await ctx.send(embed=embed, view=ColorView())
 
 bot.run(TOKEN)
+        
