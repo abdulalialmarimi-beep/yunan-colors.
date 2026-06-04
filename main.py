@@ -9,14 +9,13 @@ from threading import Thread
 app = Flask('')
 @app.route('/')
 def home(): return "البوت يعمل بكفاءة!"
-def run(): app.run(host='0.0.0.0', port=8080)
-Thread(target=run).start()
+Thread(target=lambda: app.run(host='0.0.0.0', port=8080)).start()
 
 TOKEN = os.environ.get("TOKEN")
 intents = discord.Intents.all()
 bot = commands.Bot(command_prefix="#", intents=intents)
 
-# القائمة الثابتة (لا يمكن أن يخطئ البوت في ترتيبها)
+# القائمة الثابتة (الرقم مرتبط بالاسم واللون)
 COLOR_DATA = {
     1: ("أحمر صارخ", 0xFF0000), 2: ("أحمر برتقالي", 0xFF4500), 3: ("برتقالي أحمر", 0xFF6347), 4: ("برتقالي", 0xFFA500), 5: ("برتقالي ذهبي", 0xFF8C00),
     6: ("ذهبي", 0xFFD700), 7: ("أصفر ذهبي", 0xFFD700), 8: ("أصفر", 0xFFFF00), 9: ("أصفر مخضر", 0xADFF2F), 10: ("أخضر مصفر", 0xBDFF00),
@@ -41,28 +40,25 @@ class ColorView(discord.ui.View):
         start = (self.page * 10) + 1
         for i in range(start, start + 10):
             if i in COLOR_DATA:
-                btn = discord.ui.Button(label=f"{i}", style=discord.ButtonStyle.secondary, custom_id=f"color_{i}")
-                btn.callback = self.get_callback(i)
+                # هنا التعديل: ليظهر الرقم فقط في الزر
+                btn = discord.ui.Button(label=f"{i}", style=discord.ButtonStyle.secondary, custom_id=f"c{i}")
+                btn.callback = self.make_callback(i)
                 self.add_item(btn)
         self.add_item(discord.ui.Button(label="⬅️", style=discord.ButtonStyle.primary, custom_id="prev", row=4))
         self.add_item(discord.ui.Button(label="❌ إزالة", style=discord.ButtonStyle.danger, custom_id="remove", row=4))
         self.add_item(discord.ui.Button(label="➡️", style=discord.ButtonStyle.primary, custom_id="next", row=4))
 
-    def get_callback(self, i):
+    def make_callback(self, i):
         async def callback(interaction: discord.Interaction):
             try:
                 name, color = COLOR_DATA[i]
-                # إزالة أي لون من قائمة الـ 50
                 for r in interaction.user.roles:
-                    if any(r.name == COLOR_DATA[n][0] for n in range(1, 51)):
-                        await interaction.user.remove_roles(r)
-                # إضافة اللون الجديد
+                    if any(r.name == COLOR_DATA[n][0] for n in range(1, 51)): await interaction.user.remove_roles(r)
                 role = discord.utils.get(interaction.guild.roles, name=name)
                 if not role: role = await interaction.guild.create_role(name=name, color=discord.Color(color))
                 await interaction.user.add_roles(role)
-                await interaction.response.send_message(f"✅ تم تفعيل: {name}", ephemeral=True)
-                await asyncio.sleep(4)
-                await interaction.delete_original_response()
+                await interaction.response.send_message(f"✅ تم تفعيل اللون رقم {i}", ephemeral=True)
+                await asyncio.sleep(4); await interaction.delete_original_response()
             except: pass
         return callback
 
@@ -74,15 +70,13 @@ class ColorView(discord.ui.View):
             for r in interaction.user.roles:
                 if any(r.name == COLOR_DATA[n][0] for n in range(1, 51)): await interaction.user.remove_roles(r)
             await interaction.response.send_message("❌ تمت الإزالة", ephemeral=True)
-            await asyncio.sleep(4)
-            await interaction.delete_original_response()
+            await asyncio.sleep(4); await interaction.delete_original_response()
             return True
         self.update_buttons()
         await interaction.response.edit_message(view=self)
         return True
 
 @bot.command()
-async def لوحة(ctx):
-    await ctx.send("👑 **نظام ألوان YONAN (اختر رقم اللون):**", view=ColorView())
+async def لوحة(ctx): await ctx.send("👑 **اختر رقم لونك:**", view=ColorView())
 
 bot.run(TOKEN)
