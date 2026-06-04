@@ -1,9 +1,8 @@
-import os
 import discord
 from discord.ext import commands
 
-# هذا الكود يبحث عن كلمة TOKEN في إعدادات موقع Render
-TOKEN = os.environ.get("TOKEN")
+# ضع التوكن الخاص بك هنا بين علامتي تنصيص
+TOKEN = "MTAxMjM0NTY3ODkwMTIzNDU2.Gxyz12.ABC... (MTUxMjA4OTMyMzkyNTkzMDA5NQ.GvB_P5.2MeMskAxcZfEnWE_FVk6smDxeL3A6l0quaIn7M)"
 IMAGE_URL = "ضع_رابط_صورتك_هنا"
 
 bot = commands.Bot(command_prefix="#", intents=discord.Intents.all())
@@ -38,4 +37,6 @@ async def on_ready():
 async def لون(ctx):
     embed = discord.Embed(title="🎨 لوحة ألوان YONAN FAMILY")
     embed.set_image(url=IMAGE_URL)
-    
+    await ctx.send(embed=embed, view=ColorView())
+
+bot.run(TOKEN)
