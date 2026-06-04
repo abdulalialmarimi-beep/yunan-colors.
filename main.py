@@ -41,5 +41,5 @@ async def on_ready():
 if TOKEN:
     bot.run(TOKEN)
 else:
-    print("❌ خطأ: التوكن غير موجود في إعدادات Render!")
+    print("❌ خطأ: التوكن غير موجود!")
     
