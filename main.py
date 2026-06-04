@@ -2,8 +2,8 @@ import discord
 from discord.ext import commands
 import logging
 
-# منع ظهور رسائل الخطأ المزعجة في الـ Logs
-logging.basicConfig(level=logging.ERROR)
+# إخفاء التحذيرات المزعجة في الـ Logs
+logging.getLogger('discord').setLevel(logging.ERROR)
 
 TOKEN = "ضع_التوكن_هنا"
 intents = discord.Intents.all()
@@ -11,7 +11,9 @@ bot = commands.Bot(command_prefix="#", intents=intents, help_command=None)
 
 class ColorView(discord.ui.View):
     def __init__(self):
+        # timeout=None يجعل الأزرار دائمة ولا تنتهي صلاحيتها
         super().__init__(timeout=None)
+        # إنشاء 40 زر (مربعات الألوان)
         for i in range(1, 41):
             btn = discord.ui.Button(label=f"لون {i}", style=discord.ButtonStyle.primary, custom_id=f"color_{i}")
             btn.callback = self.make_callback(i)
@@ -24,6 +26,7 @@ class ColorView(discord.ui.View):
             if not role:
                 role = await interaction.guild.create_role(name=role_name)
             
+            # إزالة الألوان القديمة للعضو ليبقى لون واحد فقط
             for r in interaction.user.roles:
                 if r.name.startswith("لون "):
                     await interaction.user.remove_roles(r)
@@ -34,13 +37,19 @@ class ColorView(discord.ui.View):
 
 @bot.command()
 async def لوحة(ctx):
+    # مسح الرسائل القديمة في القناة لتظهر اللوحة نظيفة
     await ctx.channel.purge(limit=5)
-    embed = discord.Embed(title="👑 YONAN FAMILY", description="اختر المربع الملون:", color=0x2b2d31)
+    
+    embed = discord.Embed(
+        title="👑 أقوى نظام ألوان - YONAN FAMILY",
+        description="اضغط على أي مربع ملون لتغيير لون اسمك فوراً:",
+        color=0x2b2d31
+    )
     await ctx.send(embed=embed, view=ColorView())
 
 @bot.event
 async def on_ready():
-    bot.add_view(ColorView())
-    print("🔥 البوت يعمل الآن بأقصى طاقة!")
+    bot.add_view(ColorView()) # ربط الأزرار بالذاكرة لتعمل دائماً
+    print("🔥 البوت يعمل الآن بكامل قوته!")
 
 bot.run(TOKEN)
