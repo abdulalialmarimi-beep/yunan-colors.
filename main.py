@@ -5,7 +5,7 @@ from discord.ext import commands
 from flask import Flask
 from threading import Thread
 
-# --- جزء التشغيل 24 ساعة ---
+# --- الحماية من التوقف (Keep-Alive) ---
 app = Flask('')
 @app.route('/')
 def home(): return "البوت يعمل بكفاءة!"
@@ -15,7 +15,7 @@ TOKEN = os.environ.get("TOKEN")
 intents = discord.Intents.all()
 bot = commands.Bot(command_prefix="#", intents=intents)
 
-# القائمة الثابتة (لا يمكن أن يخطئ البوت)
+# القائمة الثابتة (الرقم مرتبط بالاسم واللون)
 COLOR_DATA = {
     1: ("أحمر صارخ", 0xFF0000), 2: ("أحمر برتقالي", 0xFF4500), 3: ("برتقالي أحمر", 0xFF6347), 4: ("برتقالي", 0xFFA500), 5: ("برتقالي ذهبي", 0xFF8C00),
     6: ("ذهبي", 0xFFD700), 7: ("أصفر ذهبي", 0xFFD700), 8: ("أصفر", 0xFFFF00), 9: ("أصفر مخضر", 0xADFF2F), 10: ("أخضر مصفر", 0xBDFF00),
@@ -39,9 +39,11 @@ class ColorView(discord.ui.View):
         self.clear_items()
         start = (self.page * 10) + 1
         for i in range(start, start + 10):
-            btn = discord.ui.Button(label=f"{i}", style=discord.ButtonStyle.secondary, custom_id=f"c{i}")
-            btn.callback = self.make_callback(i)
-            self.add_item(btn)
+            if i in COLOR_DATA:
+                # هنا التعديل: ليظهر الرقم فقط في الزر
+                btn = discord.ui.Button(label=f"{i}", style=discord.ButtonStyle.secondary, custom_id=f"c{i}")
+                btn.callback = self.make_callback(i)
+                self.add_item(btn)
         self.add_item(discord.ui.Button(label="⬅️", style=discord.ButtonStyle.primary, custom_id="prev", row=4))
         self.add_item(discord.ui.Button(label="❌ إزالة", style=discord.ButtonStyle.danger, custom_id="remove", row=4))
         self.add_item(discord.ui.Button(label="➡️", style=discord.ButtonStyle.primary, custom_id="next", row=4))
@@ -75,15 +77,6 @@ class ColorView(discord.ui.View):
         return True
 
 @bot.command()
-async def لوحة(ctx):
-    # رابط الصورة المباشر
-    image_url = "https://cdn.discordapp.com/attachments/801930633635037194/1512226140025131070/1000099891.jpg"
-    embed = discord.Embed(title="👑 نظام ألوان YONAN", description="اضغط على الأرقام أدناه لاختيار لونك!")
-    embed.set_image(url=image_url)
-    await ctx.send(embed=embed, view=ColorView())
-
-@bot.event
-async def on_ready(): print('البوت جاهز للعمل!')
+async def لوحة(ctx): await ctx.send("👑 **اختر رقم لونك:**", view=ColorView())
 
 bot.run(TOKEN)
-    
