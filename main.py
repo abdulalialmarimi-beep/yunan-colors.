@@ -4,6 +4,7 @@ from discord.ext import commands
 from flask import Flask
 from threading import Thread
 
+# تشغيل البوت
 app = Flask('')
 @app.route('/')
 def home(): return "البوت يعمل!"
@@ -13,7 +14,7 @@ TOKEN = os.environ.get("TOKEN")
 intents = discord.Intents.all()
 bot = commands.Bot(command_prefix="#", intents=intents)
 
-# القائمة الدقيقة بأسماء الألوان
+# القائمة الدقيقة بأسماء الألوان الـ 50
 COLORS = {
     1: "أحمر صارخ", 2: "أحمر برتقالي", 3: "برتقالي أحمر", 4: "برتقالي", 5: "برتقالي ذهبي",
     6: "ذهبي", 7: "أصفر ذهبي", 8: "أصفر", 9: "أصفر مخضر", 10: "أخضر مصفر",
@@ -28,55 +29,52 @@ COLORS = {
 }
 
 async def set_role(interaction, i):
-    await interaction.response.defer(ephemeral=True)
+    # إزالة التنبيه المؤقت (defer) لضمان سرعة الاستجابة
     name = COLORS[i]
     role = discord.utils.get(interaction.guild.roles, name=name)
     if not role: role = await interaction.guild.create_role(name=name)
     
+    # إزالة الألوان السابقة
     for n in COLORS.values():
         old = discord.utils.get(interaction.guild.roles, name=n)
         if old in interaction.user.roles: await interaction.user.remove_roles(old)
     
     await interaction.user.add_roles(role)
-    await interaction.followup.send(f"✅ تم تفعيل: {name}", ephemeral=True, delete_after=3)
+    await interaction.response.send_message(f"✅ تم تفعيل اللون: {name}", ephemeral=True, delete_after=3)
 
-# بناء الرسالة التوضيحية
-def build_desc(start, end):
-    return "\n".join([f"**{i}.** {COLORS[i]}" for i in range(start, end + 1)])
-
-class View1(discord.ui.View): 
-    def __init__(self):
+class ColorView(discord.ui.View):
+    def __init__(self, start, end):
         super().__init__(timeout=None)
-        for i in range(1, 26):
+        for i in range(start, end + 1):
             btn = discord.ui.Button(label=str(i), style=discord.ButtonStyle.secondary, custom_id=f"c{i}")
             btn.callback = lambda inter, i=i: set_role(inter, i)
             self.add_item(btn)
+        
+        # زر الإزالة في نهاية القائمة الثانية
+        if start == 26:
+            rem = discord.ui.Button(label="❌ إزالة", style=discord.ButtonStyle.danger, custom_id="rem")
+            rem.callback = self.remove_all
+            self.add_item(rem)
 
-class View2(discord.ui.View):
-    def __init__(self):
-        super().__init__(timeout=None)
-        for i in range(26, 51):
-            btn = discord.ui.Button(label=str(i), style=discord.ButtonStyle.secondary, custom_id=f"c{i}")
-            btn.callback = lambda inter, i=i: set_role(inter, i)
-            self.add_item(btn)
-        rem = discord.ui.Button(label="❌ إزالة", style=discord.ButtonStyle.danger, custom_id="rem")
-        rem.callback = self.remove
-        self.add_item(rem)
-
-    async def remove(self, inter):
-        await inter.response.defer(ephemeral=True)
+    async def remove_all(self, inter):
         for name in COLORS.values():
             r = discord.utils.get(inter.guild.roles, name=name)
             if r in inter.user.roles: await inter.user.remove_roles(r)
-        await inter.followup.send("❌ تمت إزالة الألوان", ephemeral=True, delete_after=3)
+        await inter.response.send_message("❌ تمت إزالة الألوان", ephemeral=True, delete_after=3)
 
 @bot.command()
 async def ارسال_اللوحة(ctx):
     class Open(discord.ui.View):
         @discord.ui.button(label="👑 افتح لوحة الألوان", style=discord.ButtonStyle.green)
         async def click(self, inter, btn):
-            await inter.response.send_message(f"**اختر لونك (1-25):**\n{build_desc(1, 25)}", view=View1(), ephemeral=True)
-            await inter.followup.send(f"**اختر لونك (26-50):**\n{build_desc(26, 50)}", view=View2(), ephemeral=True)
-    await ctx.send("نظام YONAN:", view=Open())
+            # بناء القوائم
+            desc1 = "\n".join([f"**{i}.** {COLORS[i]}" for i in range(1, 26)])
+            desc2 = "\n".join([f"**{i}.** {COLORS[i]}" for i in range(26, 51)])
+            
+            await inter.response.send_message(f"**اختر رقم اللون (1-25):**\n{desc1}", view=ColorView(1, 25), ephemeral=False)
+            await inter.followup.send(f"**اختر رقم اللون (26-50):**\n{desc2}", view=ColorView(26, 50), ephemeral=False)
+            
+    await ctx.send("نظام YONAN للألوان:", view=Open())
 
 bot.run(TOKEN)
+
