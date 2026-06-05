@@ -7,9 +7,9 @@ from discord.ext import commands
 TOKEN = os.environ.get("TOKEN")
 intents = discord.Intents.all()
 bot = commands.Bot(command_prefix="#", intents=intents)
-lock = asyncio.Lock() # هذا القفل يمنع تداخل الأوامر
+process_lock = asyncio.Lock()
 
-# ─── قاموس الألوان (50 لون) ──────────────────────────────────────────────────
+# ─── قاموس الألوان ───────────────────────────────────────────────────────────
 COLORS = {
     1: ("أحمر صارخ", 0xE74C3C), 2: ("أحمر برتقالي", 0xF39C12), 3: ("برتقالي أحمر", 0xD35400), 4: ("برتقالي", 0xE67E22), 5: ("برتقالي ذهبي", 0xF1C40F),
     6: ("ذهبي", 0xF1C40F), 7: ("أصفر ذهبي", 0xF7DC6F), 8: ("أصفر", 0xFFF176), 9: ("أصفر مخضر", 0xD4E157), 10: ("أخضر مصفر", 0xC0CA33),
@@ -23,35 +23,24 @@ COLORS = {
     46: ("رمادي فاتح", 0xCFD8DC), 47: ("رمادي مزرق", 0x90A4AE), 48: ("رمادي أرجواني", 0x9FA8DA), 49: ("رمادي غامق", 0x546E7A), 50: ("أسود مخملي", 0x212121)
 }
 
-# ─── دالة التعيين الصامتة ─────────────────────────────────────────────────────
+# ─── دالة صامتة تماماً ────────────────────────────────────────────────────────
 async def set_role(interaction: discord.Interaction, i: int):
-    # إخبار ديسكورد بالانتظار وتفعيل وضع التفكير لمنع الخطأ
-    await interaction.response.defer(ephemeral=True, thinking=True)
-    
-    async with lock: # القفل يضمن عدم تداخل الضغطات
+    # نستخدم defer للإشعار بأن البوت استلم الأمر (بدون رسالة إضافية)
+    await interaction.response.defer(ephemeral=True)
+    async with process_lock:
         try:
-            # 1. جلب الرتبة
             role = discord.utils.get(interaction.guild.roles, name=str(i))
             if not role: 
                 role = await interaction.guild.create_role(name=str(i), color=discord.Color(COLORS[i][1]))
             
-            # 2. تنظيف الرتب القديمة من العضو
-            all_role_names = [str(num) for num in COLORS]
-            roles_to_remove = [r for r in interaction.user.roles if r.name in all_role_names]
-            if roles_to_remove:
-                await interaction.user.remove_roles(*roles_to_remove)
+            all_roles = [discord.utils.get(interaction.guild.roles, name=str(n)) for n in COLORS]
+            to_remove = [r for r in all_roles if r and r in interaction.user.roles]
+            if to_remove: await interaction.user.remove_roles(*to_remove)
             
-            # 3. إضافة الرتبة الجديدة
             await interaction.user.add_roles(role)
-            
-            # تم حذف رسالة التأكيد "Followup" تماماً لمنع ظهور أي رسائل
-            # إذا أردت رؤية رسالة "تغير لونك"، أضف السطر التالي:
-            # await interaction.followup.send(f"✅ تم!", ephemeral=True)
-            
-        except Exception as e:
-            print(f"حدث خطأ: {e}")
+        except: pass # لا توجد رسائل رد، نجاح صامت
 
-# ─── كلاس الأزرار ─────────────────────────────────────────────────────────────
+# ─── بقية الكود (كما هو) ──────────────────────────────────────────────────────
 class ColorView(discord.ui.View):
     def __init__(self, start: int, end: int, show_remove: bool = False):
         super().__init__(timeout=None)
@@ -65,19 +54,15 @@ class ColorView(discord.ui.View):
             self.add_item(rem)
 
     async def remove_all(self, interaction: discord.Interaction):
-        await interaction.response.defer(ephemeral=True, thinking=True)
-        async with lock:
-            all_role_names = [str(num) for num in COLORS]
-            roles_to_remove = [r for r in interaction.user.roles if r.name in all_role_names]
-            if roles_to_remove:
-                await interaction.user.remove_roles(*roles_to_remove)
+        await interaction.response.defer(ephemeral=True)
+        async with process_lock:
+            roles = [discord.utils.get(interaction.guild.roles, name=str(n)) for n in COLORS]
+            await interaction.user.remove_roles(*[r for r in roles if r and r in interaction.user.roles])
 
-# ─── التشغيل ────────────────────────────────────────────────────────────────
 @bot.event
 async def on_ready():
     bot.add_view(ColorView(1, 25)); bot.add_view(ColorView(26, 37))
     bot.add_view(ColorView(38, 49)); bot.add_view(ColorView(50, 50, show_remove=True))
-    print(f"✅ البوت جاهز: {bot.user}")
 
 @bot.command(name="ارسال_اللوحة")
 @commands.has_permissions(administrator=True)
