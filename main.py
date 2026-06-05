@@ -14,6 +14,7 @@ TOKEN = os.environ.get("TOKEN")
 intents = discord.Intents.all()
 bot = commands.Bot(command_prefix="#", intents=intents)
 
+# قاموس الألوان (ترتيب رقمي)
 COLORS = {
     1: "أحمر صارخ", 2: "أحمر برتقالي", 3: "برتقالي أحمر", 4: "برتقالي", 5: "برتقالي ذهبي",
     6: "ذهبي", 7: "أصفر ذهبي", 8: "أصفر", 9: "أصفر مخضر", 10: "أخضر مصفر",
@@ -27,31 +28,32 @@ COLORS = {
     46: "رمادي فاتح", 47: "رمادي مزرق", 48: "رمادي أرجواني", 49: "رمادي غامق", 50: "أسود مخملي"
 }
 
+# دالة إعطاء اللون
 async def set_role(interaction, i):
     role_name = COLORS[i]
     guild = interaction.guild
+    # البحث عن الرتبة أو إنشائها
     role = discord.utils.get(guild.roles, name=role_name)
     if not role: role = await guild.create_role(name=role_name)
     
-    # إزالة الألوان السابقة
+    # إزالة جميع الألوان السابقة للعضو
     for n in COLORS.values():
         old = discord.utils.get(guild.roles, name=n)
         if old in interaction.user.roles: await interaction.user.remove_roles(old)
     
     await interaction.user.add_roles(role)
-    await interaction.response.send_message(f"✅ تم تفعيل: {role_name}", ephemeral=True, delete_after=2)
+    await interaction.response.send_message(f"✅ تم تفعيل اللون: {role_name}", ephemeral=True, delete_after=2)
 
 class ColorView(discord.ui.View):
     def __init__(self, start, end):
         super().__init__(timeout=None)
-        # إنشاء أزرار الأرقام
         for i in range(start, end + 1):
             btn = discord.ui.Button(label=str(i), style=discord.ButtonStyle.secondary, custom_id=f"color_{i}")
             btn.callback = lambda inter, i=i: set_role(inter, i)
             self.add_item(btn)
         
-        # إضافة زر إزالة واحد لكل لوحة
-        rem = discord.ui.Button(label="❌ إزالة اللون", style=discord.ButtonStyle.danger, custom_id=f"rem_{start}")
+        # زر إزالة اللون
+        rem = discord.ui.Button(label="❌ إزالة", style=discord.ButtonStyle.danger, custom_id=f"rem_{start}")
         rem.callback = self.remove_all
         self.add_item(rem)
 
@@ -62,11 +64,9 @@ class ColorView(discord.ui.View):
         await inter.response.send_message("❌ تمت إزالة جميع الألوان", ephemeral=True, delete_after=2)
 
 @bot.command()
-async def send_menu(ctx):
-    await ctx.message.delete()
-    # لوحة أولى مستقلة تماماً
-    await ctx.send("👑 **لوحة الألوان (1-25):**", view=ColorView(1, 25))
-    # لوحة ثانية مستقلة تماماً
-    await ctx.send("👑 **لوحة الألوان (26-50):**", view=ColorView(26, 50))
+async def ارسال_اللوحة(ctx):
+    await ctx.message.delete() # حذف أمر المستخدم
+    await ctx.send("👑 **اختر رقم اللون (1-25):**", view=ColorView(1, 25))
+    await ctx.send("👑 **اختر رقم اللون (26-50):**", view=ColorView(26, 50))
 
 bot.run(TOKEN)
