@@ -2,21 +2,12 @@ import os
 import asyncio
 import discord
 from discord.ext import commands
-from flask import Flask
-from threading import Thread
-
-# ─── إعداد الخادم لإبقاء البوت متصلاً ──────────────────────────────────────────
-app = Flask('')
-@app.route('/')
-def home(): return "البوت يعمل! ✅"
-def run_flask(): app.run(host='0.0.0.0', port=8080)
-Thread(target=run_flask, daemon=True).start()
 
 # ─── إعدادات البوت ────────────────────────────────────────────────────────────
 TOKEN = os.environ.get("TOKEN")
 intents = discord.Intents.all()
 bot = commands.Bot(command_prefix="#", intents=intents)
-lock = asyncio.Lock() # نظام القفل لمنع تداخل الأوامر
+lock = asyncio.Lock() # هذا القفل يمنع تداخل الأوامر
 
 # ─── قاموس الألوان (50 لون) ──────────────────────────────────────────────────
 COLORS = {
@@ -32,24 +23,33 @@ COLORS = {
     46: ("رمادي فاتح", 0xCFD8DC), 47: ("رمادي مزرق", 0x90A4AE), 48: ("رمادي أرجواني", 0x9FA8DA), 49: ("رمادي غامق", 0x546E7A), 50: ("أسود مخملي", 0x212121)
 }
 
-# ─── دالة تعيين اللون (صامتة وسريعة) ─────────────────────────────────────────
+# ─── دالة التعيين الصامتة ─────────────────────────────────────────────────────
 async def set_role(interaction: discord.Interaction, i: int):
-    # إخبار ديسكورد أن البوت يقوم بعملية لمنع الخطأ
+    # إخبار ديسكورد بالانتظار وتفعيل وضع التفكير لمنع الخطأ
     await interaction.response.defer(ephemeral=True, thinking=True)
-    async with lock:
+    
+    async with lock: # القفل يضمن عدم تداخل الضغطات
         try:
+            # 1. جلب الرتبة
             role = discord.utils.get(interaction.guild.roles, name=str(i))
             if not role: 
                 role = await interaction.guild.create_role(name=str(i), color=discord.Color(COLORS[i][1]))
             
-            # تنظيف الرتب القديمة
-            roles_to_remove = [discord.utils.get(interaction.guild.roles, name=str(num)) for num in COLORS]
-            await interaction.user.remove_roles(*[r for r in roles_to_remove if r and r in interaction.user.roles])
+            # 2. تنظيف الرتب القديمة من العضو
+            all_role_names = [str(num) for num in COLORS]
+            roles_to_remove = [r for r in interaction.user.roles if r.name in all_role_names]
+            if roles_to_remove:
+                await interaction.user.remove_roles(*roles_to_remove)
             
-            # إضافة الرتبة الجديدة
+            # 3. إضافة الرتبة الجديدة
             await interaction.user.add_roles(role)
+            
+            # تم حذف رسالة التأكيد "Followup" تماماً لمنع ظهور أي رسائل
+            # إذا أردت رؤية رسالة "تغير لونك"، أضف السطر التالي:
+            # await interaction.followup.send(f"✅ تم!", ephemeral=True)
+            
         except Exception as e:
-            print(f"خطأ: {e}")
+            print(f"حدث خطأ: {e}")
 
 # ─── كلاس الأزرار ─────────────────────────────────────────────────────────────
 class ColorView(discord.ui.View):
@@ -60,15 +60,17 @@ class ColorView(discord.ui.View):
             btn.callback = lambda inter, num=i: set_role(inter, num)
             self.add_item(btn)
         if show_remove:
-            rem = discord.ui.Button(label="❌ إزالة اللون", style=discord.ButtonStyle.danger, custom_id="remove_all")
+            rem = discord.ui.Button(label="❌ إزالة", style=discord.ButtonStyle.danger, custom_id="remove_all")
             rem.callback = self.remove_all
             self.add_item(rem)
 
     async def remove_all(self, interaction: discord.Interaction):
         await interaction.response.defer(ephemeral=True, thinking=True)
         async with lock:
-            roles = [discord.utils.get(interaction.guild.roles, name=str(num)) for num in COLORS]
-            await interaction.user.remove_roles(*[r for r in roles if r and r in interaction.user.roles])
+            all_role_names = [str(num) for num in COLORS]
+            roles_to_remove = [r for r in interaction.user.roles if r.name in all_role_names]
+            if roles_to_remove:
+                await interaction.user.remove_roles(*roles_to_remove)
 
 # ─── التشغيل ────────────────────────────────────────────────────────────────
 @bot.event
