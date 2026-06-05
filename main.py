@@ -4,6 +4,7 @@ from discord.ext import commands
 from flask import Flask
 from threading import Thread
 
+# تشغيل البوت
 app = Flask('')
 @app.route('/')
 def home(): return "البوت يعمل!"
@@ -13,7 +14,7 @@ TOKEN = os.environ.get("TOKEN")
 intents = discord.Intents.all()
 bot = commands.Bot(command_prefix="#", intents=intents)
 
-# القائمة الدقيقة بأسماء الألوان التي أرسلتها أنت
+# قائمة الألوان الـ 50 المرتبة
 COLORS = {
     1: "أحمر صارخ", 2: "أحمر برتقالي", 3: "برتقالي أحمر", 4: "برتقالي", 5: "برتقالي ذهبي",
     6: "ذهبي", 7: "أصفر ذهبي", 8: "أصفر", 9: "أصفر مخضر", 10: "أخضر مصفر",
@@ -27,44 +28,45 @@ COLORS = {
     46: "رمادي فاتح", 47: "رمادي مزرق", 48: "رمادي أرجواني", 49: "رمادي غامق", 50: "أسود مخملي"
 }
 
+# دالة إعطاء الرتبة
 async def set_role(interaction, i):
     name = COLORS[i]
     role = discord.utils.get(interaction.guild.roles, name=name)
     if not role: role = await interaction.guild.create_role(name=name)
     
-    # إزالة الألوان السابقة
+    # إزالة الألوان السابقة فوراً
     for n in COLORS.values():
         old = discord.utils.get(interaction.guild.roles, name=n)
         if old in interaction.user.roles: await interaction.user.remove_roles(old)
     
     await interaction.user.add_roles(role)
-    await interaction.response.send_message(f"✅ تم تفعيل اللون: {name}", ephemeral=True, delete_after=3)
+    await interaction.response.send_message(f"✅ تم تفعيل: {name}", ephemeral=True, delete_after=2)
 
+# الكلاس الموحد للوحتين
 class ColorView(discord.ui.View):
     def __init__(self, start, end, is_last=False):
         super().__init__(timeout=None)
         for i in range(start, end + 1):
-            btn = discord.ui.Button(label=str(i), style=discord.ButtonStyle.secondary, custom_id=f"c{i}")
+            btn = discord.ui.Button(label=str(i), style=discord.ButtonStyle.secondary, custom_id=f"color_{i}")
             btn.callback = lambda inter, i=i: set_role(inter, i)
             self.add_item(btn)
+        
+        # إضافة زر الإزالة في نهاية اللوحة الثانية فقط
         if is_last:
-            rem = discord.ui.Button(label="إزالة", style=discord.ButtonStyle.danger, custom_id="rem")
+            rem = discord.ui.Button(label="إزالة الألوان", style=discord.ButtonStyle.danger, custom_id="rem_all")
             rem.callback = self.remove_all
             self.add_item(rem)
 
     async def remove_all(self, inter):
         for name in COLORS.values():
             r = discord.utils.get(inter.guild.roles, name=name)
-            if r in inter.user.roles: await inter.user.remove_roles(r)
-        await inter.response.send_message("❌ تمت إزالة الألوان", ephemeral=True, delete_after=3)
+            if r in interaction.user.roles: await interaction.user.remove_roles(r)
+        await inter.response.send_message("❌ تمت إزالة الألوان", ephemeral=True, delete_after=2)
 
 @bot.command()
 async def ارسال_اللوحة(ctx):
-    # نصوص توضح الألوان
-    desc1 = "\n".join([f"**{i}.** {COLORS[i]}" for i in range(1, 26)])
-    desc2 = "\n".join([f"**{i}.** {COLORS[i]}" for i in range(26, 51)])
-    
-    await ctx.send(f"**اختر رقم اللون:**\n{desc1}", view=ColorView(1, 25))
-    await ctx.send(f"{desc2}", view=ColorView(26, 50, is_last=True))
+    # إرسال الرسالتين معاً لتعطي شكل 50 زر كاملة
+    await ctx.send("👑 **لوحة الألوان (1-50):**", view=ColorView(1, 25))
+    await ctx.send(view=ColorView(26, 50, is_last=True))
 
 bot.run(TOKEN)
