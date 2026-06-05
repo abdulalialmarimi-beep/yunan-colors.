@@ -193,6 +193,7 @@ async def send_panel(ctx):
         pass
 
     await ctx.send("🎨 **اختر لونك (1-25):**",  view=ColorView(1,  25))
+    await asyncio.sleep(1)
     await ctx.send("🎨 **اختر لونك (26-50):**", view=ColorView(26, 50, show_remove=True))
 
 # ─── أحداث البوت ──────────────────────────────────────────────────────────────
