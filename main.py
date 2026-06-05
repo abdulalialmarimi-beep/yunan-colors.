@@ -15,7 +15,7 @@ TOKEN = os.environ.get("TOKEN")
 intents = discord.Intents.all()
 bot = commands.Bot(command_prefix="#", intents=intents)
 
-# القائمة الاحترافية
+# القائمة الاحترافية (50 لون)
 COLOR_DATA = {
     1: ("أحمر صارخ", 0xFF0000), 2: ("أحمر برتقالي", 0xFF4500), 3: ("برتقالي أحمر", 0xFF6347), 4: ("برتقالي", 0xFFA500), 5: ("برتقالي ذهبي", 0xFF8C00),
     6: ("ذهبي", 0xFFD700), 7: ("أصفر ذهبي", 0xFFD700), 8: ("أصفر", 0xFFFF00), 9: ("أصفر مخضر", 0xADFF2F), 10: ("أخضر مصفر", 0xBDFF00),
@@ -29,7 +29,7 @@ COLOR_DATA = {
     46: ("رمادي فاتح", 0xD3D3D3), 47: ("رمادي مزرق", 0x708090), 48: ("رمادي أرجواني", 0x9370DB), 49: ("رمادي غامق", 0x36393F), 50: ("أسود مخملي", 0x2C2F33)
 }
 
-active_users = set()
+active_users = {}
 
 class ColorView(discord.ui.View):
     def __init__(self, page=0, user_id=None):
@@ -61,11 +61,14 @@ class ColorView(discord.ui.View):
                 if old_role in interaction.user.roles: await interaction.user.remove_roles(old_role)
             
             await interaction.user.add_roles(role)
-            await interaction.followup.send(f"✅ تم تفعيل: {name}", ephemeral=True)
+            await interaction.followup.send(f"✅ تم تفعيل اللون: {name}", ephemeral=True)
+            await asyncio.sleep(3)
+            try: await interaction.delete_original_response()
+            except: pass
         return callback
 
     async def on_timeout(self):
-        if self.user_id in active_users: active_users.remove(self.user_id)
+        if self.user_id in active_users: del active_users[self.user_id]
 
     async def interaction_check(self, interaction: discord.Interaction) -> bool:
         if interaction.user.id != self.user_id: return False
@@ -78,6 +81,9 @@ class ColorView(discord.ui.View):
                 old_role = discord.utils.get(interaction.guild.roles, name=COLOR_DATA[n][0])
                 if old_role in interaction.user.roles: await interaction.user.remove_roles(old_role)
             await interaction.followup.send("❌ تمت إزالة الألوان", ephemeral=True)
+            await asyncio.sleep(3)
+            try: await interaction.delete_original_response()
+            except: pass
             return True
         await interaction.response.edit_message(view=self)
         return True
@@ -92,10 +98,9 @@ async def ارسال_اللوحة(ctx):
             if interaction.user.id in active_users:
                 await interaction.followup.send("⚠️ أنت بالفعل قمت بفتح لوحتك!", ephemeral=True)
                 return
-            active_users.add(interaction.user.id)
-            await interaction.followup.send("اختر رقم لونك:", view=ColorView(user_id=interaction.user.id), ephemeral=True)
+            active_users[interaction.user.id] = True
+            await interaction.followup.send("اختر رقم لونك (اللوحة ستختفي بعد 15 دقيقة):", view=ColorView(user_id=interaction.user.id), ephemeral=True)
 
-    await ctx.send(embed=discord.Embed(title="👑 نظام ألوان YONAN"), view=OpenView())
+    await ctx.send(embed=discord.Embed(title="👑 نظام YONAN"), view=OpenView())
 
-bot.run(TOKEN)
 bot.run(TOKEN)
