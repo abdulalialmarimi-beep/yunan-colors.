@@ -184,12 +184,9 @@ async def send_panel(ctx):
     except:
         pass
 
-    msg1 = await ctx.send("🎨 **اختر لونك (1-25):**", view=ColorView(1, 25))
-    msg2 = await ctx.send("🎨 **اختر لونك (26-50):**", view=ColorView(26, 50, show_remove=True))
-
-    # تحقق إذا الرسائل اتبعتت
-    if not msg1 or not msg2:
-        await ctx.send("❌ صار خطأ في إرسال اللوحة، جرب مرة ثانية.", delete_after=5)
+    await ctx.send("🎨 **اختر لونك (1-25):**",  view=ColorView(1,  25))
+    await ctx.send("🎨 **اختر لونك (26-49):**", view=ColorView(26, 49))
+    await ctx.send("🎨 **اختر لونك (50):**",    view=ColorView(50, 50, show_remove=True))
 
 # ─── أحداث البوت ──────────────────────────────────────────────────────────────
 @bot.event
