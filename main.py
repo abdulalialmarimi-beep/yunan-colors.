@@ -5,7 +5,7 @@ from discord.ext import commands
 from flask import Flask
 from threading import Thread
 
-# ─── سيرفر Flask ─────────────────────────────────────────────────────────────
+# ─── سيرفر Flask لإبقاء البوت حياً ───────────────────────────────────────────
 app = Flask('')
 @app.route('/')
 def home(): return "البوت يعمل! ✅"
@@ -16,8 +16,9 @@ Thread(target=run_flask, daemon=True).start()
 TOKEN = os.environ.get("TOKEN")
 intents = discord.Intents.all()
 bot = commands.Bot(command_prefix="#", intents=intents)
+lock = asyncio.Lock() # قفل لمنع تعليق الأزرار
 
-# ─── قاموس الألوان المحدث (ألوان احترافية) ──────────────────────────────────
+# ─── قاموس الألوان (50 لون احترافي) ──────────────────────────────────────────
 COLORS = {
     1: ("أحمر صارخ", 0xE74C3C), 2: ("أحمر برتقالي", 0xF39C12), 3: ("برتقالي أحمر", 0xD35400), 4: ("برتقالي", 0xE67E22), 5: ("برتقالي ذهبي", 0xF1C40F),
     6: ("ذهبي", 0xF1C40F), 7: ("أصفر ذهبي", 0xF7DC6F), 8: ("أصفر", 0xFFF176), 9: ("أصفر مخضر", 0xD4E157), 10: ("أخضر مصفر", 0xC0CA33),
@@ -31,29 +32,22 @@ COLORS = {
     46: ("رمادي فاتح", 0xCFD8DC), 47: ("رمادي مزرق", 0x90A4AE), 48: ("رمادي أرجواني", 0x9FA8DA), 49: ("رمادي غامق", 0x546E7A), 50: ("أسود مخملي", 0x212121)
 }
 
-# ─── دالة تعيين اللون (محدثة لمنع التعليق) ───────────────────────────────────
+# ─── دالة تعيين اللون الصامتة ────────────────────────────────────────────────
 async def set_role(interaction: discord.Interaction, i: int):
-    # استخدام defer لتجنب خطأ فشل التفاعل عند الضغط المتكرر
-    await interaction.response.defer(ephemeral=True)
-    
-    try:
-        arabic_name, hex_color = COLORS[i]
-        role_name = str(i)
-        role = discord.utils.get(interaction.guild.roles, name=role_name)
-        if not role: role = await interaction.guild.create_role(name=role_name, color=discord.Color(hex_color))
-
-        # إزالة الرتب القديمة مع تأخير بسيط للحماية
-        roles_to_remove = [discord.utils.get(interaction.guild.roles, name=str(num)) for num in COLORS]
-        roles_to_remove = [r for r in roles_to_remove if r and r in interaction.user.roles]
-        
-        if roles_to_remove:
-            await interaction.user.remove_roles(*roles_to_remove)
-            await asyncio.sleep(0.3) 
-
-        await interaction.user.add_roles(role)
-        await interaction.followup.send(f"✅ تم تفعيل اللون **{arabic_name}** ({i})", ephemeral=True)
-    except Exception as e:
-        await interaction.followup.send("❌ حدث خطأ، يرجى المحاولة بعد قليل.", ephemeral=True)
+    async with lock: # القفل يمنع أي تعليق
+        try:
+            await interaction.response.defer(ephemeral=True)
+            role = discord.utils.get(interaction.guild.roles, name=str(i))
+            if not role: 
+                role = await interaction.guild.create_role(name=str(i), color=discord.Color(COLORS[i][1]))
+            
+            roles_to_remove = [discord.utils.get(interaction.guild.roles, name=str(num)) for num in COLORS]
+            user_roles = [r for r in roles_to_remove if r and r in interaction.user.roles]
+            if user_roles: await interaction.user.remove_roles(*user_roles)
+            
+            await interaction.user.add_roles(role)
+            # تم حذف رسالة التأكيد لجعل البوت صامتاً وسريعاً
+        except Exception: pass
 
 # ─── كلاس الأزرار ─────────────────────────────────────────────────────────────
 class ColorView(discord.ui.View):
@@ -64,24 +58,21 @@ class ColorView(discord.ui.View):
             btn.callback = lambda inter, num=i: set_role(inter, num)
             self.add_item(btn)
         if show_remove:
-            rem = discord.ui.Button(label="❌ إزالة اللون", style=discord.ButtonStyle.danger, custom_id="remove_all")
+            rem = discord.ui.Button(label="❌ إزالة", style=discord.ButtonStyle.danger, custom_id="remove_all")
             rem.callback = self.remove_all
             self.add_item(rem)
 
     async def remove_all(self, interaction: discord.Interaction):
-        await interaction.response.defer(ephemeral=True)
-        roles_to_remove = [discord.utils.get(interaction.guild.roles, name=str(num)) for num in COLORS]
-        roles_to_remove = [r for r in roles_to_remove if r and r in interaction.user.roles]
-        if roles_to_remove: await interaction.user.remove_roles(*roles_to_remove)
-        await interaction.followup.send("❌ تمت إزالة جميع الألوان", ephemeral=True)
+        async with lock:
+            await interaction.response.defer(ephemeral=True)
+            roles = [discord.utils.get(interaction.guild.roles, name=str(num)) for num in COLORS]
+            await interaction.user.remove_roles(*[r for r in roles if r and r in interaction.user.roles])
 
 # ─── التشغيل ────────────────────────────────────────────────────────────────
 @bot.event
 async def on_ready():
-    bot.add_view(ColorView(1, 25))
-    bot.add_view(ColorView(26, 37))
-    bot.add_view(ColorView(38, 49))
-    bot.add_view(ColorView(50, 50, show_remove=True))
+    bot.add_view(ColorView(1, 25)); bot.add_view(ColorView(26, 37))
+    bot.add_view(ColorView(38, 49)); bot.add_view(ColorView(50, 50, show_remove=True))
     print(f"✅ البوت جاهز: {bot.user}")
 
 @bot.command(name="ارسال_اللوحة")
@@ -92,4 +83,5 @@ async def send_panel(ctx):
     await ctx.send("🎨 **اختر لونك (38-49):**", view=ColorView(38, 49))
     await ctx.send("🎨 **اختر لونك (50):**", view=ColorView(50, 50, show_remove=True))
 
-bot.run(TOKEN)
+if TOKEN: bot.run(TOKEN)
+    
