@@ -23,9 +23,8 @@ TOKEN = os.environ.get("TOKEN")
 intents = discord.Intents.all()
 bot = commands.Bot(command_prefix="#", intents=intents)
 
-# ─── قاموس الألوان (رقم: (اسم عربي, hex)) ────────────────────────────────────
+# ─── قاموس الألوان ────────────────────────────────────────────────────────────
 COLORS = {
-    # 1-10: أحمر وبرتقالي
     1:  ("أحمر صارخ",         0xFF0000),
     2:  ("أحمر برتقالي",      0xFF3300),
     3:  ("برتقالي أحمر",      0xFF5500),
@@ -36,7 +35,6 @@ COLORS = {
     8:  ("أصفر",              0xFFFF00),
     9:  ("أصفر مخضر",         0xCCFF00),
     10: ("أخضر مصفر",         0x99FF00),
-    # 11-20: أخضر
     11: ("أخضر فاتح",         0x66FF00),
     12: ("أخضر عشبي",         0x33CC00),
     13: ("أخضر",              0x00AA00),
@@ -47,7 +45,6 @@ COLORS = {
     18: ("سماوي",             0x00CCBB),
     19: ("سماوي فاتح",        0x00DDCC),
     20: ("أزرق سماوي",        0x00CCFF),
-    # 21-30: أزرق
     21: ("أزرق فاتح",         0x33AAFF),
     22: ("أزرق",              0x0088FF),
     23: ("أزرق ملكي",         0x0055FF),
@@ -58,7 +55,6 @@ COLORS = {
     28: ("بنفسجي فاتح",       0x7700FF),
     29: ("بنفسجي",            0x9900FF),
     30: ("بنفسجي غامق",       0xAA00CC),
-    # 31-40: أرجواني ووردي
     31: ("أرجواني",           0xBB00AA),
     32: ("أرجواني فاتح",      0xCC00BB),
     33: ("وردي بنفسجي",       0xDD00CC),
@@ -69,7 +65,6 @@ COLORS = {
     38: ("وردي مائل للأحمر",  0xFF2255),
     39: ("أحمر وردي",         0xFF3344),
     40: ("أحمر فاتح",         0xFF4444),
-    # 41-50: تدرجات إضافية
     41: ("مرجاني",            0xFF6B6B),
     42: ("خوخي",              0xFFAA88),
     43: ("رملي",              0xDDBB88),
@@ -86,9 +81,8 @@ COLORS = {
 async def set_role(interaction: discord.Interaction, i: int):
     try:
         arabic_name, hex_color = COLORS[i]
-        role_name = str(i)  # اسم الرتبة = رقم فقط
+        role_name = str(i)
 
-        # إنشاء الرتبة إن لم تكن موجودة
         role = discord.utils.get(interaction.guild.roles, name=role_name)
         if not role:
             role = await interaction.guild.create_role(
@@ -96,7 +90,6 @@ async def set_role(interaction: discord.Interaction, i: int):
                 color=discord.Color(hex_color)
             )
 
-        # إزالة أي لون قديم
         roles_to_remove = [
             discord.utils.get(interaction.guild.roles, name=str(num))
             for num in COLORS
@@ -105,7 +98,6 @@ async def set_role(interaction: discord.Interaction, i: int):
         if roles_to_remove:
             await interaction.user.remove_roles(*roles_to_remove)
 
-        # إضافة اللون الجديد
         await interaction.user.add_roles(role)
         await interaction.response.send_message(
             f"✅ تم تفعيل اللون **{arabic_name}** ({i})",
@@ -192,9 +184,12 @@ async def send_panel(ctx):
     except:
         pass
 
-    await ctx.send("🎨 **اختر لونك (1-25):**",  view=ColorView(1,  25))
-    await asyncio.sleep(1)
-    await ctx.send("🎨 **اختر لونك (26-50):**", view=ColorView(26, 50, show_remove=True))
+    msg1 = await ctx.send("🎨 **اختر لونك (1-25):**", view=ColorView(1, 25))
+    msg2 = await ctx.send("🎨 **اختر لونك (26-50):**", view=ColorView(26, 50, show_remove=True))
+
+    # تحقق إذا الرسائل اتبعتت
+    if not msg1 or not msg2:
+        await ctx.send("❌ صار خطأ في إرسال اللوحة، جرب مرة ثانية.", delete_after=5)
 
 # ─── أحداث البوت ──────────────────────────────────────────────────────────────
 @bot.event
@@ -206,7 +201,7 @@ async def on_command_error(ctx, error):
     if isinstance(error, commands.MissingPermissions):
         await ctx.send("❌ ما عندك صلاحية لهذا الأمر!", delete_after=5)
     elif isinstance(error, commands.CommandNotFound):
-        pass  # تجاهل الأوامر الغير موجودة
+        pass
     else:
         print(f"[خطأ أمر] {error}")
 
@@ -215,4 +210,3 @@ if TOKEN:
     bot.run(TOKEN)
 else:
     print("❌ TOKEN غير موجود في المتغيرات البيئية!")
-    
