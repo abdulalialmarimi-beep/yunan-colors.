@@ -2,76 +2,237 @@ import os
 import asyncio
 import discord
 from discord.ext import commands
+from flask import Flask
+from threading import Thread
+
+# ─── سيرفر Flask لإبقاء البوت حياً ───────────────────────────────────────────
+app = Flask('')
+
+@app.route('/')
+def home():
+    return "البوت يعمل! ✅"
+
+def run_flask():
+    app.run(host='0.0.0.0', port=8080)
+
+Thread(target=run_flask, daemon=True).start()
 
 # ─── إعدادات البوت ────────────────────────────────────────────────────────────
 TOKEN = os.environ.get("TOKEN")
+
 intents = discord.Intents.all()
 bot = commands.Bot(command_prefix="#", intents=intents)
-process_lock = asyncio.Lock() # هذا القفل هو السر، يمنع أي تعليق
 
-# ─── قاموس الألوان ──────────────────────────────────────────────────────────
+# ─── قاموس الألوان ────────────────────────────────────────────────────────────
 COLORS = {
-    1: ("أحمر صارخ", 0xE74C3C), 2: ("أحمر برتقالي", 0xF39C12), 3: ("برتقالي أحمر", 0xD35400), 4: ("برتقالي", 0xE67E22), 5: ("برتقالي ذهبي", 0xF1C40F),
-    6: ("ذهبي", 0xF1C40F), 7: ("أصفر ذهبي", 0xF7DC6F), 8: ("أصفر", 0xFFF176), 9: ("أصفر مخضر", 0xD4E157), 10: ("أخضر مصفر", 0xC0CA33),
-    11: ("أخضر فاتح", 0x8BC34A), 12: ("أخضر عشبي", 0x7CB342), 13: ("أخضر", 0x4CAF50), 14: ("أخضر غامق", 0x2E7D32), 15: ("أخضر زمردي", 0x009688),
-    16: ("أخضر بحري", 0x26A69A), 17: ("أخضر مائي", 0x80CBC4), 18: ("سماوي", 0x4DD0E1), 19: ("سماوي فاتح", 0x80DEEA), 20: ("أزرق سماوي", 0x29B6F6),
-    21: ("أزرق فاتح", 0x03A9F4), 22: ("أزرق", 0x2196F3), 23: ("أزرق ملكي", 0x1E88E5), 24: ("أزرق نيلي", 0x3949AB), 25: ("نيلي", 0x5C6BC0),
-    26: ("أزرق بنفسجي", 0x7E57C2), 27: ("بنفسجي مزرق", 0x9575CD), 28: ("بنفسجي فاتح", 0xB39DDB), 29: ("بنفسجي", 0x673AB7), 30: ("بنفسجي غامق", 0x512DA8),
-    31: ("أرجواني", 0xAB47BC), 32: ("أرجواني فاتح", 0xCE93D8), 33: ("وردي بنفسجي", 0xEC407A), 34: ("وردي غامق", 0xD81B60), 35: ("وردي", 0xF06292),
-    36: ("وردي فاتح", 0xF48FB1), 37: ("وردي زاهي", 0xFF80AB), 38: ("وردي مائل للأحمر", 0xEF5350), 39: ("أحمر وردي", 0xE57373), 40: ("أحمر فاتح", 0xFF8A80),
-    41: ("مرجاني", 0xFF7043), 42: ("خوخي", 0xFFCCBC), 43: ("رملي", 0xD7CCC8), 44: ("كريمي", 0xFFF9C4), 45: ("بيج", 0xD7CCC8),
-    46: ("رمادي فاتح", 0xCFD8DC), 47: ("رمادي مزرق", 0x90A4AE), 48: ("رمادي أرجواني", 0x9FA8DA), 49: ("رمادي غامق", 0x546E7A), 50: ("أسود مخملي", 0x212121)
+    # 1-10: أحمر وبرتقالي
+    1:  ("أحمر صارخ",        0xFF0000),
+    2:  ("أحمر برتقالي",     0xFF2200),
+    3:  ("برتقالي أحمر",     0xFF4400),
+    4:  ("برتقالي",          0xFF6600),
+    5:  ("برتقالي ذهبي",     0xFF8800),
+    6:  ("ذهبي",             0xFFAA00),
+    7:  ("أصفر ذهبي",        0xFFCC00),
+    8:  ("أصفر",             0xFFFF00),
+    9:  ("أصفر مخضر",        0xCCFF00),
+    10: ("أخضر مصفر",        0x99FF00),
+    # 11-20: أخضر
+    11: ("أخضر فاتح",        0x66FF00),
+    12: ("أخضر عشبي",        0x44CC00),
+    13: ("أخضر",             0x00AA00),
+    14: ("أخضر غامق",        0x006600),
+    15: ("أخضر زمردي",       0x00AA55),
+    16: ("أخضر بحري",        0x00AA77),
+    17: ("أخضر مائي",        0x00BBAA),
+    18: ("سماوي",            0x00CCCC),
+    19: ("سماوي فاتح",       0x00DDEE),
+    20: ("أزرق سماوي",       0x00BBFF),
+    # 21-30: أزرق
+    21: ("أزرق فاتح",        0x33AAFF),
+    22: ("أزرق",             0x0077FF),
+    23: ("أزرق ملكي",        0x0044FF),
+    24: ("أزرق نيلي",        0x0022CC),
+    25: ("نيلي",             0x0000FF),
+    26: ("أزرق بنفسجي",      0x2200FF),
+    27: ("بنفسجي مزرق",      0x4400FF),
+    28: ("بنفسجي فاتح",      0x6600FF),
+    29: ("بنفسجي",           0x8800FF),
+    30: ("بنفسجي غامق",      0xAA00DD),
+    # 31-40: أرجواني ووردي
+    31: ("أرجواني",          0xBB00AA),
+    32: ("أرجواني فاتح",     0xCC00BB),
+    33: ("وردي بنفسجي",      0xDD00CC),
+    34: ("وردي غامق",        0xFF0088),
+    35: ("وردي",             0xFF0066),
+    36: ("وردي فاتح",        0xFF3388),
+    37: ("وردي زاهي",        0xFF1493),
+    38: ("وردي مائل للأحمر", 0xFF2244),
+    39: ("أحمر وردي",        0xFF3355),
+    40: ("أحمر فاتح",        0xFF4455),
+    # 41-50: تدرجات إضافية
+    41: ("مرجاني",           0xFF6B6B),
+    42: ("خوخي",             0xFFAA88),
+    43: ("رملي",             0xDDBB88),
+    44: ("كريمي",            0xFFEECC),
+    45: ("بيج",              0xF5DEB3),
+    46: ("رمادي فاتح",       0xCCCCCC),
+    47: ("رمادي مزرق",       0x99AABB),
+    48: ("رمادي أرجواني",    0xAA99BB),
+    49: ("رمادي غامق",       0x555555),
+    50: ("أسود مخملي",       0x111111),
 }
 
-# ─── دالة صامتة تماماً ────────────────────────────────────────────────────────
-async def set_role(interaction: discord.Interaction, i: int):
-    # إشعار سريع للديسكورد أننا نعمل (بدون إرسال رسائل للنص)
-    await interaction.response.defer(ephemeral=True)
-    async with process_lock: # انتظار الدور في المعالجة
-        try:
-            role = discord.utils.get(interaction.guild.roles, name=str(i))
-            if not role: 
-                role = await interaction.guild.create_role(name=str(i), color=discord.Color(COLORS[i][1]))
-            
-            # حذف الرتب السابقة
-            all_roles = [discord.utils.get(interaction.guild.roles, name=str(n)) for n in COLORS]
-            to_remove = [r for r in all_roles if r and r in interaction.user.roles]
-            if to_remove: await interaction.user.remove_roles(*to_remove)
-            
-            await interaction.user.add_roles(role)
-        except: pass
+# ─── إنشاء الرتب مسبقاً عند تشغيل البوت ──────────────────────────────────────
+async def create_all_roles(guild: discord.Guild):
+    for num, (name, hex_color) in COLORS.items():
+        role = discord.utils.get(guild.roles, name=str(num))
+        if not role:
+            try:
+                await guild.create_role(
+                    name=str(num),
+                    color=discord.Color(hex_color)
+                )
+                await asyncio.sleep(0.3)  # تجنب rate limit
+            except Exception as e:
+                print(f"[خطأ إنشاء رتبة {num}] {e}")
 
-# ─── كلاس الأزرار ─────────────────────────────────────────────────────────────
+@bot.event
+async def on_ready():
+    print(f"✅ البوت شغال: {bot.user} | السيرفرات: {len(bot.guilds)}")
+    for guild in bot.guilds:
+        print(f"⚙️ جاري إنشاء الرتب في: {guild.name}")
+        await create_all_roles(guild)
+        print(f"✅ تم إنشاء الرتب في: {guild.name}")
+
+@bot.event
+async def on_guild_join(guild: discord.Guild):
+    await create_all_roles(guild)
+
+# ─── دالة تعيين اللون ─────────────────────────────────────────────────────────
+async def set_role(interaction: discord.Interaction, i: int):
+    try:
+        arabic_name, hex_color = COLORS[i]
+        role_name = str(i)
+
+        role = discord.utils.get(interaction.guild.roles, name=role_name)
+        if not role:
+            role = await interaction.guild.create_role(
+                name=role_name,
+                color=discord.Color(hex_color)
+            )
+
+        # إزالة الألوان القديمة
+        roles_to_remove = [
+            discord.utils.get(interaction.guild.roles, name=str(num))
+            for num in COLORS
+        ]
+        roles_to_remove = [r for r in roles_to_remove if r and r in interaction.user.roles]
+        if roles_to_remove:
+            await interaction.user.remove_roles(*roles_to_remove)
+
+        await interaction.user.add_roles(role)
+        await interaction.response.send_message(
+            f"✅ تم تفعيل اللون **{arabic_name}** ({i})",
+            ephemeral=True,
+            delete_after=5
+        )
+    except discord.Forbidden:
+        await interaction.response.send_message(
+            "❌ البوت ما عنده صلاحية لتعديل الرتب!",
+            ephemeral=True,
+            delete_after=5
+        )
+    except Exception as e:
+        print(f"[خطأ set_role] {e}")
+        try:
+            await interaction.response.send_message(
+                "❌ صار خطأ، جرب مرة ثانية.",
+                ephemeral=True,
+                delete_after=5
+            )
+        except:
+            pass
+
+# ─── لوحة الأزرار ─────────────────────────────────────────────────────────────
 class ColorView(discord.ui.View):
     def __init__(self, start: int, end: int, show_remove: bool = False):
         super().__init__(timeout=None)
+
         for i in range(start, end + 1):
-            btn = discord.ui.Button(label=str(i), style=discord.ButtonStyle.secondary, custom_id=f"color_{i}")
+            btn = discord.ui.Button(
+                label=str(i),
+                style=discord.ButtonStyle.secondary,
+                custom_id=f"color_{i}"
+            )
             btn.callback = lambda inter, num=i: set_role(inter, num)
             self.add_item(btn)
+
         if show_remove:
-            rem = discord.ui.Button(label="❌ إزالة", style=discord.ButtonStyle.danger, custom_id="remove_all")
+            rem = discord.ui.Button(
+                label="❌ إزالة اللون",
+                style=discord.ButtonStyle.danger,
+                custom_id="remove_all"
+            )
             rem.callback = self.remove_all
             self.add_item(rem)
 
     async def remove_all(self, interaction: discord.Interaction):
-        await interaction.response.defer(ephemeral=True)
-        async with process_lock:
-            roles = [discord.utils.get(interaction.guild.roles, name=str(n)) for n in COLORS]
-            await interaction.user.remove_roles(*[r for r in roles if r and r in interaction.user.roles])
+        try:
+            roles_to_remove = [
+                discord.utils.get(interaction.guild.roles, name=str(num))
+                for num in COLORS
+            ]
+            roles_to_remove = [r for r in roles_to_remove if r and r in interaction.user.roles]
+            if roles_to_remove:
+                await interaction.user.remove_roles(*roles_to_remove)
+            await interaction.response.send_message(
+                "❌ تمت إزالة جميع الألوان",
+                ephemeral=True,
+                delete_after=5
+            )
+        except discord.Forbidden:
+            await interaction.response.send_message(
+                "❌ البوت ما عنده صلاحية!",
+                ephemeral=True,
+                delete_after=5
+            )
+        except Exception as e:
+            print(f"[خطأ remove_all] {e}")
+            try:
+                await interaction.response.send_message(
+                    "❌ صار خطأ، جرب مرة ثانية.",
+                    ephemeral=True,
+                    delete_after=5
+                )
+            except:
+                pass
 
-@bot.event
-async def on_ready():
-    bot.add_view(ColorView(1, 25)); bot.add_view(ColorView(26, 37))
-    bot.add_view(ColorView(38, 49)); bot.add_view(ColorView(50, 50, show_remove=True))
-
+# ─── أمر إرسال اللوحة ─────────────────────────────────────────────────────────
 @bot.command(name="ارسال_اللوحة")
 @commands.has_permissions(administrator=True)
 async def send_panel(ctx):
-    await ctx.send("🎨 **اختر لونك (1-25):**", view=ColorView(1, 25))
+    try:
+        await ctx.message.delete()
+    except:
+        pass
+
+    await ctx.send("🎨 **اختر لونك (1-25):**",  view=ColorView(1,  25))
     await ctx.send("🎨 **اختر لونك (26-37):**", view=ColorView(26, 37))
     await ctx.send("🎨 **اختر لونك (38-49):**", view=ColorView(38, 49))
-    await ctx.send("🎨 **اختر لونك (50):**", view=ColorView(50, 50, show_remove=True))
+    await ctx.send("🎨 **اختر لونك (50):**",    view=ColorView(50, 50, show_remove=True))
 
-if TOKEN: bot.run(TOKEN)
-    
+# ─── معالجة الأخطاء ───────────────────────────────────────────────────────────
+@bot.event
+async def on_command_error(ctx, error):
+    if isinstance(error, commands.MissingPermissions):
+        await ctx.send("❌ ما عندك صلاحية لهذا الأمر!", delete_after=5)
+    elif isinstance(error, commands.CommandNotFound):
+        pass
+    else:
+        print(f"[خطأ أمر] {error}")
+
+# ─── تشغيل البوت ──────────────────────────────────────────────────────────────
+if TOKEN:
+    bot.run(TOKEN)
+else:
+    print("❌ TOKEN غير موجود في المتغيرات البيئية!")
