@@ -5,6 +5,7 @@ from discord.ext import commands
 from flask import Flask
 from threading import Thread
 
+# تشغيل البوت 24/7
 app = Flask('')
 @app.route('/')
 def home(): return "البوت يعمل!"
@@ -28,12 +29,11 @@ COLOR_DATA = {
     46: ("رمادي فاتح", 0xD3D3D3), 47: ("رمادي مزرق", 0x708090), 48: ("رمادي أرجواني", 0x9370DB), 49: ("رمادي غامق", 0x36393F), 50: ("أسود مخملي", 0x2C2F33)
 }
 
-# لتتبع من فتح اللوحة
 active_users = set()
 
 class ColorView(discord.ui.View):
     def __init__(self, page=0, user_id=None):
-        super().__init__(timeout=900) # تنتهي بعد 15 دقيقة
+        super().__init__(timeout=900)
         self.page = page
         self.user_id = user_id
         self.update_buttons()
@@ -51,6 +51,7 @@ class ColorView(discord.ui.View):
 
     def make_callback(self, i):
         async def callback(interaction: discord.Interaction):
+            await interaction.response.defer(ephemeral=True)
             name, color = COLOR_DATA[i]
             role = discord.utils.get(interaction.guild.roles, name=name)
             if not role: role = await interaction.guild.create_role(name=name, color=discord.Color(color))
@@ -60,14 +61,11 @@ class ColorView(discord.ui.View):
                 if old_role in interaction.user.roles: await interaction.user.remove_roles(old_role)
             
             await interaction.user.add_roles(role)
-            await interaction.response.send_message(f"✅ تم تفعيل: {name}", ephemeral=True)
-            await asyncio.sleep(3) # حذف سريع
-            try: await interaction.delete_original_response()
-            except: pass
+            await interaction.followup.send(f"✅ تم تفعيل: {name}", ephemeral=True)
         return callback
 
     async def on_timeout(self):
-        active_users.remove(self.user_id)
+        if self.user_id in active_users: active_users.remove(self.user_id)
 
     async def interaction_check(self, interaction: discord.Interaction) -> bool:
         if interaction.user.id != self.user_id: return False
@@ -75,15 +73,12 @@ class ColorView(discord.ui.View):
         if cid == "prev": self.page = max(0, self.page - 1)
         elif cid == "next": self.page = min(4, self.page + 1)
         elif cid == "remove":
+            await interaction.response.defer(ephemeral=True)
             for n in range(1, 51):
                 old_role = discord.utils.get(interaction.guild.roles, name=COLOR_DATA[n][0])
                 if old_role in interaction.user.roles: await interaction.user.remove_roles(old_role)
-            await interaction.response.send_message("❌ تمت إزالة جميع الألوان", ephemeral=True)
-            await asyncio.sleep(3)
-            try: await interaction.delete_original_response()
-            except: pass
+            await interaction.followup.send("❌ تمت إزالة الألوان", ephemeral=True)
             return True
-        self.update_buttons()
         await interaction.response.edit_message(view=self)
         return True
 
@@ -93,13 +88,14 @@ async def ارسال_اللوحة(ctx):
     class OpenView(discord.ui.View):
         @discord.ui.button(label="👑 افتح لوحة ألوانك الخاصة", style=discord.ButtonStyle.green)
         async def open(self, interaction: discord.Interaction, button: discord.ui.Button):
+            await interaction.response.defer(ephemeral=True)
             if interaction.user.id in active_users:
-                await interaction.response.send_message("⚠️ أنت بالفعل قمت بفتح لوحتك الخاصة مسبقاً!", ephemeral=True)
+                await interaction.followup.send("⚠️ أنت بالفعل قمت بفتح لوحتك!", ephemeral=True)
                 return
             active_users.add(interaction.user.id)
-            await interaction.response.send_message("اختر لونك (تنتهي اللوحة بعد 15 دقيقة):", view=ColorView(user_id=interaction.user.id), ephemeral=True)
+            await interaction.followup.send("اختر رقم لونك:", view=ColorView(user_id=interaction.user.id), ephemeral=True)
 
-    embed = discord.Embed(title="👑 نظام ألوان YONAN", description="اضغط الزر أدناه لفتح لوحتك الخاصة:")
-    await ctx.send(embed=embed, view=OpenView())
+    await ctx.send(embed=discord.Embed(title="👑 نظام ألوان YONAN"), view=OpenView())
 
+bot.run(TOKEN)
 bot.run(TOKEN)
