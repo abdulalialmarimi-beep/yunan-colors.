@@ -4,6 +4,7 @@ from discord.ext import commands
 from flask import Flask
 from threading import Thread
 
+# تشغيل البوت
 app = Flask('')
 @app.route('/')
 def home(): return "البوت يعمل!"
@@ -13,8 +14,8 @@ TOKEN = os.environ.get("TOKEN")
 intents = discord.Intents.all()
 bot = commands.Bot(command_prefix="#", intents=intents)
 
-# القائمة المربوطة بالأرقام بالضبط كما طلبت
-COLORS = {
+# القائمة التي أرسلتها بالضبط
+COLORS_NAMES = {
     1: "أحمر صارخ", 2: "أحمر برتقالي", 3: "برتقالي أحمر", 4: "برتقالي", 5: "برتقالي ذهبي",
     6: "ذهبي", 7: "أصفر ذهبي", 8: "أصفر", 9: "أصفر مخضر", 10: "أخضر مصفر",
     11: "أخضر فاتح", 12: "أخضر عشبي", 13: "أخضر", 14: "أخضر غامق", 15: "أخضر زمردي",
@@ -27,14 +28,15 @@ COLORS = {
     46: "رمادي فاتح", 47: "رمادي مزرق", 48: "رمادي أرجواني", 49: "رمادي غامق", 50: "أسود مخملي"
 }
 
+# دالة التفعيل السريعة
 async def set_role(interaction, i):
-    role_name = COLORS[i]
+    role_name = COLORS_NAMES[i]
     guild = interaction.guild
     role = discord.utils.get(guild.roles, name=role_name)
     if not role: role = await guild.create_role(name=role_name)
     
     # إزالة الألوان السابقة
-    for n in COLORS.values():
+    for n in COLORS_NAMES.values():
         old = discord.utils.get(guild.roles, name=n)
         if old in interaction.user.roles: await interaction.user.remove_roles(old)
     
@@ -48,20 +50,26 @@ class ColorView(discord.ui.View):
             btn = discord.ui.Button(label=str(i), style=discord.ButtonStyle.secondary, custom_id=f"c{i}")
             btn.callback = lambda inter, i=i: set_role(inter, i)
             self.add_item(btn)
+        
         if is_last:
             rem = discord.ui.Button(label="Remove", style=discord.ButtonStyle.danger, custom_id="rem_all")
             rem.callback = self.remove_all
             self.add_item(rem)
 
     async def remove_all(self, inter):
-        for name in COLORS.values():
+        for name in COLORS_NAMES.values():
             r = discord.utils.get(inter.guild.roles, name=name)
             if r in inter.user.roles: await inter.user.remove_roles(r)
-        await inter.response.send_message("Removed", ephemeral=True, delete_after=2)
+        await inter.response.send_message("❌ تمت إزالة جميع الألوان", ephemeral=True, delete_after=2)
 
 @bot.command()
 async def send_menu(ctx):
-    await ctx.send("1-25", view=ColorView(1, 25))
-    await ctx.send("26-50", view=ColorView(26, 50, is_last=True))
+    # إرسال قائمة الألوان أولاً
+    list_text = "\n".join([f"{i}. {COLORS_NAMES[i]}" for i in range(1, 51)])
+    await ctx.send(f"**قائمة الألوان:**\n{list_text}")
+    
+    # إرسال الأزرار
+    await ctx.send("👑 **اختر رقم اللون (1-25):**", view=ColorView(1, 25))
+    await ctx.send("👑 **اختر رقم اللون (26-50):**", view=ColorView(26, 50, is_last=True))
 
 bot.run(TOKEN)
