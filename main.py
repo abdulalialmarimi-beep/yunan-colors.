@@ -15,7 +15,7 @@ TOKEN = os.environ.get("TOKEN")
 intents = discord.Intents.all()
 bot = commands.Bot(command_prefix="#", intents=intents)
 
-# القائمة الاحترافية التي طلبتها
+# القائمة الاحترافية
 COLOR_DATA = {
     1: ("أحمر صارخ", 0xFF0000), 2: ("أحمر برتقالي", 0xFF4500), 3: ("برتقالي أحمر", 0xFF6347), 4: ("برتقالي", 0xFFA500), 5: ("برتقالي ذهبي", 0xFF8C00),
     6: ("ذهبي", 0xFFD700), 7: ("أصفر ذهبي", 0xFFD700), 8: ("أصفر", 0xFFFF00), 9: ("أصفر مخضر", 0xADFF2F), 10: ("أخضر مصفر", 0xBDFF00),
@@ -50,8 +50,7 @@ class ColorView(discord.ui.View):
         async def callback(interaction: discord.Interaction):
             name, color = COLOR_DATA[i]
             role = discord.utils.get(interaction.guild.roles, name=name)
-            if not role:
-                role = await interaction.guild.create_role(name=name, color=discord.Color(color))
+            if not role: role = await interaction.guild.create_role(name=name, color=discord.Color(color))
             
             for n in range(1, 51):
                 old_role = discord.utils.get(interaction.guild.roles, name=COLOR_DATA[n][0])
@@ -74,20 +73,20 @@ class ColorView(discord.ui.View):
                 if old_role in interaction.user.roles: await interaction.user.remove_roles(old_role)
             await interaction.response.send_message("❌ تمت الإزالة", ephemeral=True)
             await asyncio.sleep(4)
-            try: await interaction.delete_original_response()
-            except: pass
             return True
-        self.update_buttons()
         await interaction.response.edit_message(view=self)
         return True
 
 @bot.command()
 @commands.has_permissions(administrator=True)
 async def ارسال_اللوحة(ctx):
-    image_url = "https://cdn.discordapp.com/attachments/801930633635037194/1512226140025131070/1000099891.jpg"
-    embed = discord.Embed(title="👑 نظام ألوان YONAN", description="اضغط الرقم المطلوب:")
-    embed.set_image(url=image_url)
-    await ctx.send(embed=embed, view=ColorView())
+    # زر واحد فقط يفتح لوحة خاصة
+    class OpenView(discord.ui.View):
+        @discord.ui.button(label="👑 افتح لوحة ألوانك الخاصة", style=discord.ButtonStyle.green)
+        async def open(self, interaction: discord.Interaction, button: discord.ui.Button):
+            await interaction.response.send_message("اختر لونك:", view=ColorView(), ephemeral=True)
+
+    embed = discord.Embed(title="👑 نظام YONAN", description="اضغط الزر لفتح لوحتك الخاصة:")
+    await ctx.send(embed=embed, view=OpenView())
 
 bot.run(TOKEN)
-
