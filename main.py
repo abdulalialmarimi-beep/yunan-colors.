@@ -33,8 +33,7 @@ class ColorView(discord.ui.View):
             btn = discord.ui.Button(label=str(i), style=discord.ButtonStyle.secondary, custom_id=f"color_{i}")
             btn.callback = lambda inter, i=i: set_role(inter, i)
             self.add_item(btn)
-        
-        # زر الإزالة موجود الآن في كل لوحة بشكل مستقل
+        # زر الإزالة في كل لوحة
         rem = discord.ui.Button(label="❌ إزالة", style=discord.ButtonStyle.danger, custom_id=f"rem_{start}")
         rem.callback = self.remove_all
         self.add_item(rem)
@@ -43,14 +42,18 @@ class ColorView(discord.ui.View):
         for name in COLORS.values():
             r = discord.utils.get(inter.guild.roles, name=name)
             if r in inter.user.roles: await inter.user.remove_roles(r)
-        await inter.response.send_message("❌ تمت إزالة جميع الألوان", ephemeral=True, delete_after=2)
+        await inter.response.send_message("❌ تمت إزالة اللون", ephemeral=True, delete_after=2)
 
+# الأمر الأول (1-25)
 @bot.command()
 async def ارسال_اللوحة(ctx):
     await ctx.message.delete()
-    # إرسال كل لوحة كرسالة منفصلة تماماً
     await ctx.send("👑 **لوحة الألوان (1-25):**", view=ColorView(1, 25))
+
+# الأمر الثاني (26-50)
+@bot.command()
+async def لوحة(ctx):
+    await ctx.message.delete()
     await ctx.send("👑 **لوحة الألوان (26-50):**", view=ColorView(26, 50))
 
 bot.run(TOKEN)
-
