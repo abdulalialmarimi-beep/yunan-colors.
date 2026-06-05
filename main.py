@@ -7,9 +7,9 @@ from discord.ext import commands
 TOKEN = os.environ.get("TOKEN")
 intents = discord.Intents.all()
 bot = commands.Bot(command_prefix="#", intents=intents)
-process_lock = asyncio.Lock()
+process_lock = asyncio.Lock() # هذا القفل هو السر، يمنع أي تعليق
 
-# ─── قاموس الألوان ───────────────────────────────────────────────────────────
+# ─── قاموس الألوان ──────────────────────────────────────────────────────────
 COLORS = {
     1: ("أحمر صارخ", 0xE74C3C), 2: ("أحمر برتقالي", 0xF39C12), 3: ("برتقالي أحمر", 0xD35400), 4: ("برتقالي", 0xE67E22), 5: ("برتقالي ذهبي", 0xF1C40F),
     6: ("ذهبي", 0xF1C40F), 7: ("أصفر ذهبي", 0xF7DC6F), 8: ("أصفر", 0xFFF176), 9: ("أصفر مخضر", 0xD4E157), 10: ("أخضر مصفر", 0xC0CA33),
@@ -25,22 +25,23 @@ COLORS = {
 
 # ─── دالة صامتة تماماً ────────────────────────────────────────────────────────
 async def set_role(interaction: discord.Interaction, i: int):
-    # نستخدم defer للإشعار بأن البوت استلم الأمر (بدون رسالة إضافية)
+    # إشعار سريع للديسكورد أننا نعمل (بدون إرسال رسائل للنص)
     await interaction.response.defer(ephemeral=True)
-    async with process_lock:
+    async with process_lock: # انتظار الدور في المعالجة
         try:
             role = discord.utils.get(interaction.guild.roles, name=str(i))
             if not role: 
                 role = await interaction.guild.create_role(name=str(i), color=discord.Color(COLORS[i][1]))
             
+            # حذف الرتب السابقة
             all_roles = [discord.utils.get(interaction.guild.roles, name=str(n)) for n in COLORS]
             to_remove = [r for r in all_roles if r and r in interaction.user.roles]
             if to_remove: await interaction.user.remove_roles(*to_remove)
             
             await interaction.user.add_roles(role)
-        except: pass # لا توجد رسائل رد، نجاح صامت
+        except: pass
 
-# ─── بقية الكود (كما هو) ──────────────────────────────────────────────────────
+# ─── كلاس الأزرار ─────────────────────────────────────────────────────────────
 class ColorView(discord.ui.View):
     def __init__(self, start: int, end: int, show_remove: bool = False):
         super().__init__(timeout=None)
